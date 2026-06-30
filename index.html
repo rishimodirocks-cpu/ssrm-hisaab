@@ -115,7 +115,10 @@
       enterPhoneNum: "Phone Number", logout: "Check a different number",
       enterCode: "Enter Secret Code", codeHint: "Enter the 4-digit code given by the office",
       yourCode: "Secret Code", codeForSupplier: "Give this code to the supplier (keep private)",
-      wrongCode: "Wrong phone number or code. Please contact the office.", regenCode: "Generate New Code"
+      wrongCode: "Wrong phone number or code. Please contact the office.", regenCode: "Generate New Code",
+      editResend: "✎ Edit & Resend", rejectedNeedFix: "This entry was rejected. Fix and resend it.",
+      addPaymentReceived: "💵 Payment I Received", whatToAdd: "What do you want to add?",
+      resent: "Entry corrected and resent", amountReceived: "Amount Received (₹)"
     },
     bn: {
       appTitle: "মিল হিসাব খাতা", appSub: "সাপ্লায়ার একাউন্ট বুক",
@@ -153,7 +156,10 @@
       enterPhoneNum: "ফোন নম্বর", logout: "অন্য নম্বর দিয়ে দেখুন",
       enterCode: "গোপন কোড দিন", codeHint: "অফিস থেকে পাওয়া ৪ সংখ্যার কোড দিন",
       yourCode: "গোপন কোড", codeForSupplier: "এই কোডটি সাপ্লায়ারকে দিন (গোপন রাখুন)",
-      wrongCode: "ভুল ফোন নম্বর বা কোড। অফিসে যোগাযোগ করুন।", regenCode: "নতুন কোড তৈরি করুন"
+      wrongCode: "ভুল ফোন নম্বর বা কোড। অফিসে যোগাযোগ করুন।", regenCode: "নতুন কোড তৈরি করুন",
+      editResend: "✎ ঠিক করে আবার পাঠান", rejectedNeedFix: "এই এন্ট্রিটি বাতিল হয়েছে। ঠিক করে আবার পাঠান।",
+      addPaymentReceived: "💵 টাকা পেয়েছি এন্ট্রি", whatToAdd: "কী যোগ করতে চান?",
+      resent: "এন্ট্রি ঠিক করে আবার পাঠানো হয়েছে", amountReceived: "প্রাপ্ত টাকার পরিমাণ (₹)"
     }
   };
   function t(k){ return T[LANG][k] || k; }
@@ -298,6 +304,9 @@
         let statusTag = '';
         if(isPending) statusTag = `<br><span class="tag" style="background:#fef3c7; color:#92400e;">${t('pendingReview')}</span>`;
         if(isRejected) statusTag = `<br><span class="tag" style="background:#fee2e2; color:#991b1b;">${t('rejectedTag')}</span>`;
+        if(isRejected && currentMode==='supplier' && tx.source==='supplier'){
+          statusTag += `<br><button class="btn-sm" style="background:var(--accent); margin-top:4px; padding:6px 10px; font-size:12px;" onclick='window.__app.showSupplierTxForm("${tx.supplierId}","${tx.type}",${JSON.stringify(tx).replace(/'/g,"&#39;")})'>${t('editResend')}</button>`;
+        }
         rows += `<tr style="${isPending?'background:#fffbeb;':''}${isRejected?'opacity:0.55;':''}">
           <td>${fmtDate(tx.date)}<br><span class="tag ${tx.type==='supply'?'tag-supply':'tag-payment'}">${tx.type==='supply'?t('supply'):t('payment')}</span>${statusTag}</td>
           <td>${tx.type==='supply' ? (tx.qty+' Q') : '-'}</td>
@@ -545,42 +554,85 @@
 
   // ---- Supplier self-entry (their claimed hisaab) ----
   function showSupplierAddForm(sid){
-    const today = new Date().toISOString().slice(0,10);
     setScreen(`
       <span class="back-link" onclick="window.__app.viewSupplier('${sid}')">${t('back')}</span>
       <div class="card">
-        <div style="font-weight:700; margin-bottom:10px;">📦 ${t('addYourHisaab')}</div>
-        <label>${t('date')}</label>
-        <input type="date" id="sTxDate" value="${today}"/>
-        <div class="row">
-          <div><label>${t('qty')}</label><input type="number" id="sTxQty" oninput="window.__app.supplierRecalc()"/></div>
-          <div><label>${t('rate')}</label><input type="number" id="sTxRate" oninput="window.__app.supplierRecalc()"/></div>
-        </div>
-        <label>${t('amount')}</label>
-        <input type="number" id="sTxAmount" readonly style="background:#f3f4f6;"/>
-        <label>${t('note')}</label>
-        <input type="text" id="sTxNote"/>
-        <button class="big-btn btn-orange" onclick="window.__app.saveSupplierTx('${sid}')">${t('save')}</button>
+        <div style="font-weight:700; margin-bottom:12px;">${t('whatToAdd')}</div>
+        <button class="big-btn btn-orange" onclick="window.__app.showSupplierTxForm('${sid}','supply')">📦 ${t('supply')}</button>
+        <button class="big-btn" style="background:#1e40af;" onclick="window.__app.showSupplierTxForm('${sid}','payment')">${t('addPaymentReceived')}</button>
       </div>
     `);
+  }
+  function showSupplierTxForm(sid, type, editTx){
+    const today = new Date().toISOString().slice(0,10);
+    const e = editTx || {};
+    const dateVal = e.date || today;
+    const backFn = editTx ? `window.__app.viewSupplier('${sid}')` : `window.__app.showSupplierAddForm('${sid}')`;
+    if(type==='supply'){
+      setScreen(`
+        <span class="back-link" onclick="${backFn}">${t('back')}</span>
+        <div class="card">
+          <div style="font-weight:700; margin-bottom:10px;">📦 ${editTx ? t('editResend') : t('addYourHisaab')}</div>
+          <label>${t('date')}</label>
+          <input type="date" id="sTxDate" value="${dateVal}"/>
+          <div class="row">
+            <div><label>${t('qty')}</label><input type="number" id="sTxQty" value="${e.qty||''}" oninput="window.__app.supplierRecalc()"/></div>
+            <div><label>${t('rate')}</label><input type="number" id="sTxRate" value="${e.rate||''}" oninput="window.__app.supplierRecalc()"/></div>
+          </div>
+          <label>${t('amount')}</label>
+          <input type="number" id="sTxAmount" value="${e.amount||''}" readonly style="background:#f3f4f6;"/>
+          <label>${t('note')}</label>
+          <input type="text" id="sTxNote" value="${escapeAttr(e.note||'')}"/>
+          <button class="big-btn btn-orange" onclick="window.__app.saveSupplierTx('${sid}','supply','${editTx?editTx.id:''}')">${t('save')}</button>
+        </div>
+      `);
+    } else {
+      setScreen(`
+        <span class="back-link" onclick="${backFn}">${t('back')}</span>
+        <div class="card">
+          <div style="font-weight:700; margin-bottom:10px;">${t('addPaymentReceived')}</div>
+          <label>${t('date')}</label>
+          <input type="date" id="sTxDate" value="${dateVal}"/>
+          <label>${t('amountReceived')}</label>
+          <input type="number" id="sTxAmount" value="${e.amount||''}"/>
+          <label>${t('note')}</label>
+          <input type="text" id="sTxNote" value="${escapeAttr(e.note||'')}"/>
+          <button class="big-btn" style="background:#1e40af;" onclick="window.__app.saveSupplierTx('${sid}','payment','${editTx?editTx.id:''}')">${t('save')}</button>
+        </div>
+      `);
+    }
   }
   function supplierRecalc(){
     const q = parseFloat(document.getElementById('sTxQty').value) || 0;
     const r = parseFloat(document.getElementById('sTxRate').value) || 0;
     document.getElementById('sTxAmount').value = (q*r) || '';
   }
-  async function saveSupplierTx(sid){
+  async function saveSupplierTx(sid, type, editTxId){
     const date = document.getElementById('sTxDate').value;
-    const qty = parseFloat(document.getElementById('sTxQty').value) || 0;
-    const rate = parseFloat(document.getElementById('sTxRate').value) || 0;
     const amount = parseFloat(document.getElementById('sTxAmount').value) || 0;
     const note = document.getElementById('sTxNote').value.trim();
+    let qty=0, rate=0;
+    if(type==='supply'){
+      qty = parseFloat(document.getElementById('sTxQty').value) || 0;
+      rate = parseFloat(document.getElementById('sTxRate').value) || 0;
+    }
     if(!date || amount<=0){ showToast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields'); return; }
-    const tx = { id:'t_'+Date.now(), supplierId: sid, type:'supply', date, qty, rate, amount, note,
-      ts: Date.now(), status:'pending', source:'supplier' };
-    DATA.transactions.push(tx);
-    await saveData();
-    showToast(t('yourEntrySubmitted'));
+
+    if(editTxId){
+      const tx = DATA.transactions.find(x=>x.id===editTxId);
+      if(tx){
+        tx.date=date; tx.amount=amount; tx.note=note; tx.status='pending';
+        if(type==='supply'){ tx.qty=qty; tx.rate=rate; }
+        await saveData();
+        showToast(t('resent'));
+      }
+    } else {
+      const tx = { id:'t_'+Date.now(), supplierId: sid, type, date, qty, rate, amount, note,
+        ts: Date.now(), status:'pending', source:'supplier' };
+      DATA.transactions.push(tx);
+      await saveData();
+      showToast(t('yourEntrySubmitted'));
+    }
     viewSupplier(sid);
   }
 
@@ -645,7 +697,7 @@
     goHome, goSupplierList, supplierPhoneLogin, viewSupplier, printStatement,
     goStaffGate, checkPin, goStaffHome, showAddSupplier, saveSupplier,
     showAddTxPickSupplier, showAddTxForm, setTxType, recalc, saveTx, toggleLang,
-    showSupplierAddForm, supplierRecalc, saveSupplierTx, goReviewQueue, approveTx, rejectTx,
+    showSupplierAddForm, showSupplierTxForm, supplierRecalc, saveSupplierTx, goReviewQueue, approveTx, rejectTx,
     regenCode
   };
 
