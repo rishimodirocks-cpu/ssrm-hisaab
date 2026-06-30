@@ -69,7 +69,8 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'mill-hisaab-data-v1';
+  const FIREBASE_URL = 'https://m-hisaab-default-rtdb.asia-southeast1.firebasedatabase.app';
+  const DB_PATH = '/mill-hisaab-data.json';
   const STAFF_PIN = '1947'; // staff must enter this to add/edit entries
   let DATA = { suppliers: [], transactions: [] };
   let LANG = 'bn'; // bn = Bengali-ish labels, en = English
@@ -159,14 +160,22 @@
 
   async function loadData(){
     try{
-      const res = await window.storage.get(STORAGE_KEY, true);
-      if(res && res.value){ DATA = JSON.parse(res.value); }
-    }catch(e){ console.log('No existing data, starting fresh.'); }
+      const res = await fetch(FIREBASE_URL + DB_PATH);
+      const json = await res.json();
+      if(json && (json.suppliers || json.transactions)){
+        DATA = { suppliers: json.suppliers || [], transactions: json.transactions || [] };
+      }
+    }catch(e){ console.log('No existing data or fetch failed, starting fresh.', e); }
   }
   async function saveData(){
     try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(DATA), true);
-    }catch(e){ console.error('Save failed', e); showToast(LANG==='bn' ? 'সেভ করতে সমস্যা হয়েছে' : 'Failed to save'); }
+      const res = await fetch(FIREBASE_URL + DB_PATH, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(DATA)
+      });
+      if(!res.ok){ throw new Error('Save failed: ' + res.status); }
+    }catch(e){ console.error('Save failed', e); showToast(LANG==='bn' ? 'ইন্টারনেট সমস্যা — আবার চেষ্টা করুন' : 'Network issue — please try again'); }
   }
 
   function showToast(msg){
@@ -250,11 +259,13 @@
       </div>
     `);
   }
-  function supplierPhoneLogin(){
+  async function supplierPhoneLogin(){
     const rawPhone = document.getElementById('supplierPhoneInput').value.trim();
     const code = document.getElementById('supplierCodeInput').value.trim();
     const digits = rawPhone.replace(/\D/g,'');
     if(!digits || !code){ showToast(t('enterYourPhone')); return; }
+    showToast(LANG==='bn' ? 'লোড হচ্ছে...' : 'Loading...');
+    await loadData();
     const match = DATA.suppliers.find(s =>
       ((s.phone||'').replace(/\D/g,'').endsWith(digits) || digits.endsWith((s.phone||'').replace(/\D/g,'')))
       && s.code === code
@@ -379,8 +390,9 @@
     }
   }
 
-  function goStaffHome(){
+  async function goStaffHome(){
     currentMode = 'staff';
+    await loadData();
     const pendingCount = DATA.transactions.filter(tx=>tx.status==='pending').length;
     let list = '';
     if(DATA.suppliers.length===0){
