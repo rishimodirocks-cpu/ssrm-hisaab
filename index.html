@@ -84,6 +84,7 @@
   let LANG = 'bn';
   let currentSupplierId = null;
   let currentMode = 'supplier'; // 'supplier' | 'staff' | 'admin'
+  let varietyRows = []; // holds multi-variety state for supply form
 
   // ── TRANSLATIONS ──────────────────────────────────────────────
   const T = {
@@ -110,6 +111,10 @@
       grossAmt:"Gross Amount", deductions:"Deductions", netAmt:"Net Amount Payable",
       varietySwarna:"Swarna", varietyCM:"CM", varietyGatra:"Gatra", varietyRatna:"Ratna", varietyOther:"Other",
       cutBreakdown:"Cut Breakdown",
+      paymentMode:"Payment Mode", cash:"Cash", bankTransfer:"Bank Transfer", cheque:"Cheque", upi:"UPI",
+      addVariety:"+ Add Another Variety", removeVariety:"Remove", varietyRows:"Variety / Quantity Details",
+      bags:"Bags (optional)", bagsHint:"1 bag = 50 kg = 0.5 Q",
+      totalGross:"Total Gross", totalNet:"Total Net Qty", totalPayable:"Total Net Payable",
       totalSupplied:"Total Supplied", totalPaid:"Total Paid", balanceDue:"Balance Due (We Owe)",
       balanceAdv:"Advance Paid", clear:"All Clear ✓",
       history:"Transaction History", noTx:"No transactions yet", noSuppliers:"No suppliers added yet",
@@ -149,6 +154,10 @@
       grossAmt:"মোট টাকা", deductions:"কর্তন", netAmt:"নেট প্রদেয় টাকা",
       varietySwarna:"স্বর্ণা", varietyCM:"সিএম", varietyGatra:"গাত্রা", varietyRatna:"রত্না", varietyOther:"অন্যান্য",
       cutBreakdown:"কর্তনের বিবরণ",
+      paymentMode:"পেমেন্ট পদ্ধতি", cash:"নগদ", bankTransfer:"ব্যাংক ট্রান্সফার", cheque:"চেক", upi:"ইউপিআই",
+      addVariety:"+ আরেকটি জাত যোগ করুন", removeVariety:"সরান", varietyRows:"জাত / পরিমাণের বিবরণ",
+      bags:"বস্তা (ঐচ্ছিক)", bagsHint:"১ বস্তা = ৫০ কেজি = ০.৫ কুইন্টাল",
+      totalGross:"মোট গ্রস", totalNet:"মোট নেট পরিমাণ", totalPayable:"মোট নেট প্রদেয় টাকা",
       totalSupplied:"মোট সাপ্লাই", totalPaid:"মোট পরিশোধ", balanceDue:"বাকি টাকা (আমাদের দিতে হবে)",
       balanceAdv:"অগ্রিম দেওয়া হয়েছে", clear:"হিসাব ক্লিয়ার ✓",
       history:"লেনদেনের তালিকা", noTx:"এখনও কোনো লেনদেন নেই", noSuppliers:"এখনও কোনো সাপ্লায়ার নেই",
@@ -321,17 +330,32 @@
         // vehicle + variety + cut detail for supply rows
         let supplyDetail='';
         if(tx.type==='supply'){
-          const grossQty=tx.grossQty||tx.qty||0;
-          const netQty=tx.netQty||grossQty;
-          const variety=tx.variety||'';
           const vehicle=tx.vehicleNo||'';
           const mCut=tx.moistureCut||0;
-          const qCut=tx.qualityCut||0;
           if(vehicle) supplyDetail+=`<div style="font-size:11px;color:#374151;margin-top:3px;">🚛 ${escapeHtml(vehicle)}</div>`;
-          if(variety) supplyDetail+=`<div style="font-size:11px;color:#374151;">🌾 ${escapeHtml(variety)}</div>`;
           if(mCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">💧 Moisture: −${mCut}%</div>`;
-          if(qCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">✂️ Quality: −${fmtMoney(qCut)}/Q</div>`;
-          if(mCut>0||qCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--muted);">${grossQty}Q → ${netQty}Q</div>`;
+          // multi-variety breakdown
+          if(tx.varieties && tx.varieties.length>0){
+            tx.varieties.forEach(v=>{
+              const effRate=(v.rate||0)-(v.qualityCut||0);
+              supplyDetail+=`<div style="font-size:11px;color:#374151;margin-top:2px;">
+                🌾 <b>${escapeHtml(v.variety)}</b>: ${v.grossQty}Q
+                ${v.qualityCut>0?`<span style="color:var(--danger);">−₹${v.qualityCut}/Q</span>`:''}
+                → ${fmtMoney(v.lineAmount)}</div>`;
+            });
+          } else {
+            // legacy single-variety display
+            const variety=tx.variety||'';
+            const qCut=tx.qualityCut||0;
+            if(variety) supplyDetail+=`<div style="font-size:11px;color:#374151;">🌾 ${escapeHtml(variety)}</div>`;
+            if(qCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">✂️ Quality: −${fmtMoney(qCut)}/Q</div>`;
+          }
+        }
+        // payment mode badge
+        let paymentDetail='';
+        if(tx.type==='payment' && tx.paymentMode){
+          const modeEmoji={cash:'💵',bankTransfer:'🏦',cheque:'📄',upi:'📱'};
+          paymentDetail=`<div style="font-size:11px;color:#1e40af;margin-top:3px;">${modeEmoji[tx.paymentMode]||'💵'} ${t(tx.paymentMode)||tx.paymentMode}</div>`;
         }
         const adminBtns = currentMode==='admin' ? `
           <div style="display:flex;gap:6px;margin-top:6px;">
@@ -343,7 +367,7 @@
           <td>${fmtDate(tx.date)}<br>
             <span class="tag ${tx.type==='supply'?'tag-supply':'tag-payment'}">${tx.type==='supply'?t('supply'):t('payment')}</span>
             ${edited?`<span class="tag tag-edited">${t('editedTag')}</span>`:''}
-            ${supplyDetail}${auditHtml}${adminBtns}
+            ${supplyDetail}${paymentDetail}${auditHtml}${adminBtns}
           </td>
           <td>${grossQtyDisplay}</td>
           <td>${tx.type==='supply'?fmtMoney(tx.rate):'-'}</td>
@@ -457,74 +481,215 @@
     if(type==='supply') A.calcAmt();
   }
 
-  // Default quality cuts per variety (₹/quintal)
+  // Default quality cuts per variety (₹/quintal) — adjust to your rates
   const VARIETY_CUTS = { 'Swarna':0, 'CM':40, 'Gatra':20, 'Ratna':10, 'Other':0 };
+  const VARIETIES = ['Swarna','CM','Gatra','Ratna','Other'];
 
-  function onVarietyChange(){
-    const v=document.getElementById('fVariety').value;
-    const cutField=document.getElementById('fQualityCut');
-    if(cutField) cutField.value=VARIETY_CUTS[v]||0;
-    calcAmt();
-  }
+  function showTxTypeForm(sid, type, editId){
+    const today=new Date().toISOString().slice(0,10);
+    const existing = editId ? DATA.transactions.find(x=>x.id===editId) : null;
+    const e=existing||{};
+    const isEdit=!!editId;
+    const backFn=isEdit?`A.viewLedger('${sid}')`:`A.showAddTxForm('${sid}')`;
+    const title=isEdit?t('editEntry'):(type==='supply'?`📦 ${t('supply')}`:`💵 ${t('payment')}`);
+    const btnColor=isEdit?'btn-purple':(type==='supply'?'btn-green':'btn-blue');
 
-  function calcAmt(){
-    const grossQty=parseFloat(document.getElementById('fQty').value)||0;
-    const rate=parseFloat(document.getElementById('fRate').value)||0;
-    const moisturePct=parseFloat(document.getElementById('fMoisture').value)||0;
-    const qualityCut=parseFloat(document.getElementById('fQualityCut').value)||0;
+    if(type==='supply'){
+      // initialise variety rows from existing data or default
+      varietyRows = (e.varieties && e.varieties.length>0)
+        ? e.varieties.map(v=>({...v}))
+        : [{ variety:'Swarna', bags:'', qty:'', rate:'', qualityCut:0 }];
 
-    const moistureDeductQty=parseFloat((grossQty*moisturePct/100).toFixed(2));
-    const netQty=parseFloat((grossQty-moistureDeductQty).toFixed(2));
-    const effectiveRate=rate-qualityCut;
-    const netAmount=parseFloat((netQty*effectiveRate).toFixed(2));
+      setScreen(`
+        <span class="back-link" onclick="${backFn}">${t('back')}</span>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:12px;">${title}</div>
+          <label>${t('date')}</label>
+          <input type="date" id="fDate" value="${e.date||today}"/>
+          <label>${t('vehicleNo')}</label>
+          <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}"
+            placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
+          <label>${t('moistureCut')} <span style="font-weight:400;color:var(--muted);font-size:12px;">(applies to all varieties)</span></label>
+          <input type="number" id="fMoisture" value="${e.moistureCut||0}" min="0" max="20" step="0.5" oninput="A.renderVarietyRows()"/>
+          <div style="font-weight:600;color:var(--muted);font-size:13px;margin:8px 0 6px;">${t('varietyRows')}</div>
+          <div id="varietyRowsContainer"></div>
+          <button class="big-btn btn-grey" style="padding:12px;font-size:15px;margin-bottom:14px;" onclick="A.addVarietyRow()">+ ${t('addVariety')}</button>
+          <div id="supplyBreakdown"></div>
+          <label>${t('note')}</label>
+          <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
+          <button class="big-btn ${btnColor}" onclick="A.saveTx('${sid}','supply','${editId||''}')">${t('save')}</button>
+        </div>`);
+      renderVarietyRows();
 
-    const bd=document.getElementById('calcBreakdown');
-    const lines=document.getElementById('breakdownLines');
-    const netDisplay=document.getElementById('netAmtDisplay');
-    if(!bd) return;
-
-    if(grossQty>0 && rate>0){
-      bd.style.display='block';
-      let html=`<div style="color:#374151;">📦 ${t('qty')}: <b>${grossQty} Q</b> × ${t('rate')}: <b>${fmtMoney(rate)}</b> = ${fmtMoney(grossQty*rate)}</div>`;
-      if(moisturePct>0) html+=`<div style="color:var(--danger);">💧 ${t('moistureCut')}: ${moisturePct}% → −${moistureDeductQty} Q → Net: <b>${netQty} Q</b></div>`;
-      if(qualityCut>0) html+=`<div style="color:var(--danger);">✂️ ${t('qualityCut')}: −${fmtMoney(qualityCut)}/Q → Effective rate: <b>${fmtMoney(effectiveRate)}/Q</b></div>`;
-      lines.innerHTML=html;
-      netDisplay.innerHTML=`✅ ${t('netAmt')}: ${fmtMoney(netAmount)}`;
-      document.getElementById('fAmt').value=netAmount>0?netAmount:'';
     } else {
-      bd.style.display='none';
-      document.getElementById('fAmt').value='';
+      // PAYMENT FORM with payment mode
+      const modeOpts=['cash','bankTransfer','cheque','upi']
+        .map(m=>`<option value="${m}" ${(e.paymentMode||'cash')===m?'selected':''}>${t(m)}</option>`).join('');
+      setScreen(`
+        <span class="back-link" onclick="${backFn}">${t('back')}</span>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:10px;">${title}</div>
+          <label>${t('date')}</label>
+          <input type="date" id="fDate" value="${e.date||today}"/>
+          <label>${t('paymentMode')}</label>
+          <select id="fPayMode">${modeOpts}</select>
+          <label>${t('amount')}</label>
+          <input type="number" id="fAmt" value="${e.amount||''}" placeholder="₹"/>
+          <label>${t('note')}</label>
+          <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
+          <button class="big-btn ${btnColor}" onclick="A.saveTx('${sid}','payment','${editId||''}')">${t('save')}</button>
+        </div>`);
     }
   }
+
+  function renderVarietyRows(){
+    const moisture=parseFloat(document.getElementById('fMoisture').value)||0;
+    const container=document.getElementById('varietyRowsContainer');
+    if(!container) return;
+    let html='';
+    varietyRows.forEach((row,i)=>{
+      const varOpts=VARIETIES.map(v=>`<option value="${v}" ${row.variety===v?'selected':''}>${v}</option>`).join('');
+      const grossQty=parseFloat(row.qty)||0;
+      const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
+      const effRate=(parseFloat(row.rate)||0)-(parseFloat(row.qualityCut)||0);
+      const lineAmt=parseFloat((netQty*effRate).toFixed(2));
+      const removeBtn=varietyRows.length>1
+        ?`<button onclick="A.removeVarietyRow(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;margin-top:4px;">✕ ${t('removeVariety')}</button>`:'';
+      html+=`<div style="background:#f8fffe;border:1px solid #d1fae5;border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div class="row" style="margin-bottom:0;">
+          <div style="flex:2;">
+            <label style="font-size:12px;">${t('variety')}</label>
+            <select onchange="A.onVarietyRowChange(${i},this.value)">${varOpts}</select>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <div class="row">
+          <div>
+            <label style="font-size:12px;">${t('bags')} <span style="font-weight:400;font-size:10px;">${t('bagsHint')}</span></label>
+            <input type="number" value="${row.bags||''}" placeholder="0 bags"
+              oninput="A.onBagsInput(${i},this.value)" style="margin-bottom:6px;"/>
+          </div>
+          <div>
+            <label style="font-size:12px;">${t('qty')} (Q)</label>
+            <input type="number" id="vQty_${i}" value="${row.qty||''}" placeholder="0 Q"
+              oninput="A.onRowInput(${i},'qty',this.value)"/>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label style="font-size:12px;">${t('rate')} (₹/Q)</label>
+            <input type="number" value="${row.rate||''}" placeholder="₹"
+              oninput="A.onRowInput(${i},'rate',this.value)"/>
+          </div>
+          <div>
+            <label style="font-size:12px;">${t('qualityCut')} (₹/Q)</label>
+            <input type="number" value="${row.qualityCut||0}" placeholder="₹0"
+              oninput="A.onRowInput(${i},'qualityCut',this.value)"/>
+          </div>
+        </div>
+        ${grossQty>0&&(parseFloat(row.rate)||0)>0?`
+        <div style="font-size:12px;color:var(--brand);background:#ecfdf5;padding:6px 8px;border-radius:8px;">
+          ${netQty} Q × ${fmtMoney(effRate)} = <b>${fmtMoney(lineAmt)}</b>
+          ${moisture>0?`<span style="color:var(--danger);"> (after ${moisture}% moisture)</span>`:''}
+        </div>`:''}
+        ${removeBtn}
+      </div>`;
+    });
+    container.innerHTML=html;
+    updateSupplyBreakdown(moisture);
+  }
+
+  function updateSupplyBreakdown(moisture){
+    const bd=document.getElementById('supplyBreakdown');
+    if(!bd) return;
+    let totalGross=0,totalNet=0,totalAmt=0;
+    varietyRows.forEach(row=>{
+      const g=parseFloat(row.qty)||0;
+      const n=parseFloat((g*(1-moisture/100)).toFixed(2));
+      const eff=(parseFloat(row.rate)||0)-(parseFloat(row.qualityCut)||0);
+      totalGross+=g; totalNet+=n; totalAmt+=n*eff;
+    });
+    if(totalGross>0){
+      bd.innerHTML=`<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;text-align:center;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--muted);">${t('totalGross')}: ${totalGross.toFixed(2)} Q &nbsp;|&nbsp; ${t('totalNet')}: ${totalNet.toFixed(2)} Q</div>
+        <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:4px;">✅ ${t('totalPayable')}: ${fmtMoney(totalAmt)}</div>
+      </div>`;
+    } else { bd.innerHTML=''; }
+  }
+
+  function onVarietyRowChange(i, val){
+    varietyRows[i].variety=val;
+    varietyRows[i].qualityCut=VARIETY_CUTS[val]||0;
+    renderVarietyRows();
+  }
+  function onBagsInput(i, val){
+    const bags=parseFloat(val)||0;
+    varietyRows[i].bags=val;
+    const qty=parseFloat((bags*0.5).toFixed(2));
+    varietyRows[i].qty=qty||'';
+    renderVarietyRows();
+  }
+  function onRowInput(i, field, val){
+    varietyRows[i][field]=val;
+    renderVarietyRows();
+  }
+  function addVarietyRow(){
+    varietyRows.push({ variety:'Swarna', bags:'', qty:'', rate: varietyRows[0]?.rate||'', qualityCut:0 });
+    renderVarietyRows();
+  }
+  function removeVarietyRow(i){
+    varietyRows.splice(i,1);
+    renderVarietyRows();
+  }
+  function onVarietyChange(){} // legacy no-op
+  function calcAmt(){} // legacy no-op
   async function saveTx(sid, type, editId){
     const date=document.getElementById('fDate').value;
-    const amount=parseFloat(document.getElementById('fAmt').value)||0;
     const note=document.getElementById('fNote').value.trim();
-    let grossQty=0, rate=0, moistureCut=0, qualityCut=0, netQty=0, vehicleNo='', variety='';
+    if(!date){ showToast(LANG==='bn'?'তারিখ দিন':'Enter date'); return; }
+
+    let txData={};
+
     if(type==='supply'){
-      grossQty=parseFloat(document.getElementById('fQty').value)||0;
-      rate=parseFloat(document.getElementById('fRate').value)||0;
-      moistureCut=parseFloat(document.getElementById('fMoisture').value)||0;
-      qualityCut=parseFloat(document.getElementById('fQualityCut').value)||0;
-      netQty=parseFloat((grossQty*(1-moistureCut/100)).toFixed(2));
-      vehicleNo=(document.getElementById('fVehicle').value||'').trim().toUpperCase();
-      variety=document.getElementById('fVariety').value||'Swarna';
+      const moisture=parseFloat(document.getElementById('fMoisture').value)||0;
+      const vehicleNo=(document.getElementById('fVehicle').value||'').trim().toUpperCase();
+      // build variety rows from state
+      const varieties=varietyRows.map(row=>{
+        const grossQty=parseFloat(row.qty)||0;
+        const rate=parseFloat(row.rate)||0;
+        const qualityCut=parseFloat(row.qualityCut)||0;
+        const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
+        const effRate=rate-qualityCut;
+        const lineAmount=parseFloat((netQty*effRate).toFixed(2));
+        return { variety:row.variety, bags:parseFloat(row.bags)||0, grossQty, netQty, rate, qualityCut, lineAmount };
+      });
+      const validRows=varieties.filter(v=>v.grossQty>0&&v.rate>0);
+      if(validRows.length===0){ showToast(LANG==='bn'?'অন্তত একটি জাতের পরিমাণ ও দর দিন':'Enter qty and rate for at least one variety'); return; }
+      const totalGross=parseFloat(validRows.reduce((s,v)=>s+v.grossQty,0).toFixed(2));
+      const totalNet=parseFloat(validRows.reduce((s,v)=>s+v.netQty,0).toFixed(2));
+      const totalAmount=parseFloat(validRows.reduce((s,v)=>s+v.lineAmount,0).toFixed(2));
+      txData={ vehicleNo, moistureCut:moisture, varieties:validRows,
+        grossQty:totalGross, netQty:totalNet, amount:totalAmount,
+        // legacy fields for backward compat
+        qty:totalGross, rate:validRows[0]?.rate||0, variety:validRows.map(v=>v.variety).join('+') };
+    } else {
+      const amount=parseFloat(document.getElementById('fAmt').value)||0;
+      const paymentMode=document.getElementById('fPayMode').value;
+      if(amount<=0){ showToast(LANG==='bn'?'টাকার পরিমাণ দিন':'Enter amount'); return; }
+      txData={ amount, paymentMode };
     }
-    if(!date||amount<=0){ showToast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields'); return; }
 
     if(editId){
       const tx=DATA.transactions.find(x=>x.id===editId);
       if(!tx) return;
       if(!tx.editLog) tx.editLog=[];
       tx.editLog.push({ on:nowStr(), origAmount:tx.amount, origQty:tx.grossQty||tx.qty, origRate:tx.rate, origDate:tx.date, origNote:tx.note });
-      tx.date=date; tx.amount=amount; tx.note=note;
-      if(type==='supply'){ tx.grossQty=grossQty; tx.netQty=netQty; tx.rate=rate; tx.moistureCut=moistureCut; tx.qualityCut=qualityCut; tx.vehicleNo=vehicleNo; tx.variety=variety; }
+      Object.assign(tx, { date, note, ...txData });
       await saveData();
       showToast(t('editSaved'));
     } else {
-      const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, amount, note,
-        grossQty, netQty, rate, moistureCut, qualityCut, vehicleNo, variety,
-        ts:Date.now(), addedBy:currentMode, editLog:[] };
+      const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, note,
+        ts:Date.now(), addedBy:currentMode, editLog:[], ...txData };
       DATA.transactions.push(tx);
       await saveData();
       showToast(t('entryAdded'));
@@ -676,8 +841,9 @@
     goSupplierGate, supplierLogin,
     goPinGate, checkPin,
     goStaffHome, goAdminHome,
-    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, saveTx,
-    showEditForm, deleteTx,
+    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange,
+    renderVarietyRows, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
+    saveTx, showEditForm, deleteTx,
     showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
     printStatement
   };
