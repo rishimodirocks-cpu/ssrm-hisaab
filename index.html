@@ -510,7 +510,7 @@
           <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}"
             placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
           <label>${t('moistureCut')} <span style="font-weight:400;color:var(--muted);font-size:12px;">(applies to all varieties)</span></label>
-          <input type="number" id="fMoisture" value="${e.moistureCut||0}" min="0" max="20" step="0.5" oninput="A.renderVarietyRows()"/>
+          <input type="number" id="fMoisture" value="${e.moistureCut||0}" min="0" max="20" step="0.5" oninput="A.refreshAllCalcs()"/>
           <div style="font-weight:600;color:var(--muted);font-size:13px;margin:8px 0 6px;">${t('varietyRows')}</div>
           <div id="varietyRowsContainer"></div>
           <button class="big-btn btn-grey" style="padding:12px;font-size:15px;margin-bottom:14px;" onclick="A.addVarietyRow()">+ ${t('addVariety')}</button>
@@ -543,16 +543,13 @@
   }
 
   function renderVarietyRows(){
-    const moisture=parseFloat(document.getElementById('fMoisture').value)||0;
+    // Full rebuild — only on structural changes (add/remove row, variety dropdown)
+    const moisture=parseFloat(document.getElementById('fMoisture')?.value)||0;
     const container=document.getElementById('varietyRowsContainer');
     if(!container) return;
     let html='';
     varietyRows.forEach((row,i)=>{
       const varOpts=VARIETIES.map(v=>`<option value="${v}" ${row.variety===v?'selected':''}>${v}</option>`).join('');
-      const grossQty=parseFloat(row.qty)||0;
-      const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
-      const effRate=(parseFloat(row.rate)||0)-(parseFloat(row.qualityCut)||0);
-      const lineAmt=parseFloat((netQty*effRate).toFixed(2));
       const removeBtn=varietyRows.length>1
         ?`<button onclick="A.removeVarietyRow(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;margin-top:4px;">✕ ${t('removeVariety')}</button>`:'';
       html+=`<div style="background:#f8fffe;border:1px solid #d1fae5;border-radius:12px;padding:12px;margin-bottom:10px;">
@@ -561,12 +558,11 @@
             <label style="font-size:12px;">${t('variety')}</label>
             <select onchange="A.onVarietyRowChange(${i},this.value)">${varOpts}</select>
           </div>
-          <div style="flex:1;"></div>
         </div>
         <div class="row">
           <div>
             <label style="font-size:12px;">${t('bags')} <span style="font-weight:400;font-size:10px;">${t('bagsHint')}</span></label>
-            <input type="number" value="${row.bags||''}" placeholder="0 bags"
+            <input type="number" id="vBags_${i}" value="${row.bags||''}" placeholder="0 bags"
               oninput="A.onBagsInput(${i},this.value)" style="margin-bottom:6px;"/>
           </div>
           <div>
@@ -578,25 +574,44 @@
         <div class="row">
           <div>
             <label style="font-size:12px;">${t('rate')} (₹/Q)</label>
-            <input type="number" value="${row.rate||''}" placeholder="₹"
+            <input type="number" id="vRate_${i}" value="${row.rate||''}" placeholder="₹"
               oninput="A.onRowInput(${i},'rate',this.value)"/>
           </div>
           <div>
             <label style="font-size:12px;">${t('qualityCut')} (₹/Q)</label>
-            <input type="number" value="${row.qualityCut||0}" placeholder="₹0"
+            <input type="number" id="vQcut_${i}" value="${row.qualityCut||0}" placeholder="₹0"
               oninput="A.onRowInput(${i},'qualityCut',this.value)"/>
           </div>
         </div>
-        ${grossQty>0&&(parseFloat(row.rate)||0)>0?`
-        <div style="font-size:12px;color:var(--brand);background:#ecfdf5;padding:6px 8px;border-radius:8px;">
-          ${netQty} Q × ${fmtMoney(effRate)} = <b>${fmtMoney(lineAmt)}</b>
-          ${moisture>0?`<span style="color:var(--danger);"> (after ${moisture}% moisture)</span>`:''}
-        </div>`:''}
+        <div id="lineAmt_${i}" style="font-size:12px;color:var(--brand);background:#ecfdf5;padding:6px 8px;border-radius:8px;display:none;"></div>
         ${removeBtn}
       </div>`;
     });
     container.innerHTML=html;
+    refreshAllCalcs();
+  }
+
+  function refreshAllCalcs(){
+    // Only updates calc display divs — never touches input fields
+    const moisture=parseFloat(document.getElementById('fMoisture')?.value)||0;
+    varietyRows.forEach((_,i)=>refreshCalc(i,moisture));
     updateSupplyBreakdown(moisture);
+  }
+
+  function refreshCalc(i,moisture){
+    const grossQty=parseFloat(varietyRows[i]?.qty)||0;
+    const rate=parseFloat(varietyRows[i]?.rate)||0;
+    const qualityCut=parseFloat(varietyRows[i]?.qualityCut)||0;
+    const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
+    const effRate=rate-qualityCut;
+    const lineAmt=parseFloat((netQty*effRate).toFixed(2));
+    const el=document.getElementById('lineAmt_'+i);
+    if(!el) return;
+    if(grossQty>0&&rate>0){
+      el.style.display='block';
+      el.innerHTML=netQty+' Q × '+fmtMoney(effRate)+' = <b>'+fmtMoney(lineAmt)+'</b>'
+        +(moisture>0?' <span style="color:var(--danger);font-size:11px;">(after '+moisture+'% moisture)</span>':'');
+    } else { el.style.display='none'; }
   }
 
   function updateSupplyBreakdown(moisture){
@@ -607,34 +622,32 @@
       const g=parseFloat(row.qty)||0;
       const n=parseFloat((g*(1-moisture/100)).toFixed(2));
       const eff=(parseFloat(row.rate)||0)-(parseFloat(row.qualityCut)||0);
-      totalGross+=g; totalNet+=n; totalAmt+=n*eff;
+      totalGross+=g; totalNet=parseFloat((totalNet+n).toFixed(2)); totalAmt+=n*eff;
     });
     if(totalGross>0){
-      bd.innerHTML=`<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;text-align:center;margin-bottom:12px;">
-        <div style="font-size:13px;color:var(--muted);">${t('totalGross')}: ${totalGross.toFixed(2)} Q &nbsp;|&nbsp; ${t('totalNet')}: ${totalNet.toFixed(2)} Q</div>
-        <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:4px;">✅ ${t('totalPayable')}: ${fmtMoney(totalAmt)}</div>
-      </div>`;
+      bd.innerHTML='<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;text-align:center;margin-bottom:12px;"><div style="font-size:13px;color:var(--muted);">'+t('totalGross')+': '+totalGross.toFixed(2)+' Q &nbsp;|&nbsp; '+t('totalNet')+': '+totalNet.toFixed(2)+' Q</div><div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:4px;">✅ '+t('totalPayable')+': '+fmtMoney(totalAmt)+'</div></div>';
     } else { bd.innerHTML=''; }
   }
 
-  function onVarietyRowChange(i, val){
+  function onVarietyRowChange(i,val){
     varietyRows[i].variety=val;
     varietyRows[i].qualityCut=VARIETY_CUTS[val]||0;
     renderVarietyRows();
   }
-  function onBagsInput(i, val){
-    const bags=parseFloat(val)||0;
+  function onBagsInput(i,val){
     varietyRows[i].bags=val;
-    const qty=parseFloat((bags*0.5).toFixed(2));
-    varietyRows[i].qty=qty||'';
-    renderVarietyRows();
+    const qty=parseFloat((parseFloat(val)||0)*0.5).toFixed(2);
+    varietyRows[i].qty=qty>0?qty:'';
+    const qtyEl=document.getElementById('vQty_'+i);
+    if(qtyEl) qtyEl.value=varietyRows[i].qty;
+    refreshAllCalcs();
   }
-  function onRowInput(i, field, val){
+  function onRowInput(i,field,val){
     varietyRows[i][field]=val;
-    renderVarietyRows();
+    refreshAllCalcs();
   }
   function addVarietyRow(){
-    varietyRows.push({ variety:'Swarna', bags:'', qty:'', rate: varietyRows[0]?.rate||'', qualityCut:0 });
+    varietyRows.push({variety:'Swarna',bags:'',qty:'',rate:varietyRows[0]?.rate||'',qualityCut:0});
     renderVarietyRows();
   }
   function removeVarietyRow(i){
@@ -842,7 +855,7 @@
     goPinGate, checkPin,
     goStaffHome, goAdminHome,
     viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange,
-    renderVarietyRows, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
+    renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
     showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
     printStatement
