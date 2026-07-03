@@ -1,336 +1,347 @@
 <div id="app-root" style="
   --brand:#1a6e3c; --brand-dark:#0f4d28; --accent:#d97706; --bg:#f7f5f0;
   --card:#ffffff; --text:#1f2937; --muted:#6b7280; --danger:#dc2626; --ok:#16a34a;
+  --admin:#5b21b6;
   font-family: 'Noto Sans', 'Hind Siliguri', Arial, sans-serif;
   background:var(--bg); min-height:100vh; padding:0; box-sizing:border-box;
 ">
-
 <style>
   #app-root *{box-sizing:border-box;}
-  .scr{display:none; padding:16px; max-width:520px; margin:0 auto;}
+  .scr{display:none;padding:16px;max-width:520px;margin:0 auto;}
   .scr.active{display:block;}
-  .topbar{background:var(--brand); color:#fff; padding:18px 16px; text-align:center;
-    position:sticky; top:0; z-index:10; box-shadow:0 2px 6px rgba(0,0,0,0.15);}
-  .topbar h1{margin:0; font-size:20px; font-weight:700;}
-  .topbar p{margin:4px 0 0; font-size:13px; opacity:.9;}
-  .card{background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px;
-    box-shadow:0 1px 4px rgba(0,0,0,0.08); border:1px solid #eee;}
-  .big-btn{display:block; width:100%; padding:18px; font-size:18px; font-weight:700;
-    border-radius:14px; border:none; margin-bottom:12px; cursor:pointer; color:#fff;
+  .topbar{background:var(--brand);color:#fff;padding:18px 16px;text-align:center;
+    position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+  .topbar h1{margin:0;font-size:20px;font-weight:700;}
+  .topbar p{margin:4px 0 0;font-size:13px;opacity:.9;}
+  .lang-toggle{position:absolute;right:14px;top:18px;background:rgba(255,255,255,0.2);
+    border:1px solid rgba(255,255,255,0.5);color:#fff;padding:6px 10px;border-radius:8px;
+    font-size:12px;cursor:pointer;}
+  .topbar{position:relative;}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #eee;}
+  .big-btn{display:block;width:100%;padding:18px;font-size:18px;font-weight:700;
+    border-radius:14px;border:none;margin-bottom:12px;cursor:pointer;color:#fff;
     box-shadow:0 2px 5px rgba(0,0,0,0.12);}
   .btn-green{background:var(--brand);}
   .btn-orange{background:var(--accent);}
   .btn-grey{background:#6b7280;}
   .btn-red{background:var(--danger);}
-  .btn-sm{padding:10px 14px; font-size:14px; border-radius:10px; border:none; color:#fff; cursor:pointer; font-weight:600;}
-  input, select{width:100%; padding:13px; font-size:17px; border-radius:10px;
-    border:1.5px solid #d1d5db; margin-bottom:12px; background:#fff;}
-  label{font-size:14px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;}
-  .row{display:flex; gap:10px;}
-  .row > div{flex:1;}
-  .back-link{display:inline-block; margin-bottom:14px; color:var(--brand); font-weight:700;
-    font-size:15px; cursor:pointer; text-decoration:none;}
-  .supplier-item{display:flex; justify-content:space-between; align-items:center;
-    padding:14px; background:#fff; border-radius:12px; margin-bottom:10px; border:1px solid #eee;
-    cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+  .btn-purple{background:var(--admin);}
+  .btn-blue{background:#1e40af;}
+  .btn-sm{padding:9px 14px;font-size:13px;border-radius:10px;border:none;color:#fff;cursor:pointer;font-weight:600;}
+  input,select{width:100%;padding:13px;font-size:17px;border-radius:10px;
+    border:1.5px solid #d1d5db;margin-bottom:12px;background:#fff;}
+  label{font-size:14px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;}
+  .row{display:flex;gap:10px;}
+  .row>div{flex:1;}
+  .back-link{display:inline-block;margin-bottom:14px;color:var(--brand);font-weight:700;
+    font-size:15px;cursor:pointer;}
+  .supplier-item{display:flex;justify-content:space-between;align-items:center;
+    padding:14px;background:#fff;border-radius:12px;margin-bottom:10px;border:1px solid #eee;
+    cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
   .supplier-item:active{background:#f0f0f0;}
-  .sname{font-size:17px; font-weight:700; color:var(--text);}
-  .sphone{font-size:13px; color:var(--muted);}
-  .sbal{font-size:16px; font-weight:800;}
+  .sname{font-size:17px;font-weight:700;color:var(--text);}
+  .sphone{font-size:13px;color:var(--muted);}
+  .sbal{font-size:16px;font-weight:800;}
   .bal-due{color:var(--danger);}
   .bal-clear{color:var(--ok);}
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th{background:var(--brand); color:#fff; padding:10px 6px; text-align:left; font-size:12px;}
-  td{padding:10px 6px; border-bottom:1px solid #eee;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--brand);color:#fff;padding:9px 5px;text-align:left;font-size:11px;}
+  td{padding:9px 5px;border-bottom:1px solid #eee;vertical-align:top;}
   tr:last-child td{border-bottom:none;}
-  .tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700;}
-  .tag-supply{background:#dcfce7; color:#166534;}
-  .tag-payment{background:#dbeafe; color:#1e40af;}
-  .summary-box{display:flex; gap:10px; margin-bottom:14px;}
-  .summary-box .card{flex:1; text-align:center; padding:14px;}
-  .summary-box .num{font-size:20px; font-weight:800;}
-  .summary-box .lbl{font-size:12px; color:var(--muted); margin-top:2px;}
-  .empty{text-align:center; color:var(--muted); padding:30px 10px; font-size:15px;}
-  .pin-box{display:flex; gap:8px; justify-content:center; margin:20px 0;}
-  .pin-box input{width:50px; text-align:center; font-size:24px; padding:14px 0;}
-  .lang-toggle{position:absolute; right:14px; top:18px; background:rgba(255,255,255,0.2);
-    border:1px solid rgba(255,255,255,0.5); color:#fff; padding:6px 10px; border-radius:8px;
-    font-size:12px; cursor:pointer;}
-  .topbar{position:relative;}
-  .loader{text-align:center; padding:40px; color:var(--muted);}
-  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:#1f2937; color:#fff; padding:12px 20px; border-radius:10px; font-size:14px;
-    z-index:100; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:90%; text-align:center;}
+  .tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;}
+  .tag-supply{background:#dcfce7;color:#166534;}
+  .tag-payment{background:#dbeafe;color:#1e40af;}
+  .tag-edited{background:#fef3c7;color:#92400e;}
+  .summary-box{display:flex;gap:10px;margin-bottom:14px;}
+  .summary-box .card{flex:1;text-align:center;padding:14px;}
+  .summary-box .num{font-size:20px;font-weight:800;}
+  .summary-box .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:15px;}
+  .loader{text-align:center;padding:40px;color:var(--muted);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;
+    z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.2);max-width:90%;text-align:center;}
+  .audit-trail{font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;}
+  .mode-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;
+    font-weight:700;margin-bottom:12px;}
 </style>
 
 <div id="root-inner">
-  <div class="loader" id="loading">Loading hisaab khata... / হিসাব খাতা লোড হচ্ছে...</div>
+  <div class="loader">Loading hisaab khata... / হিসাব খাতা লোড হচ্ছে...</div>
 </div>
 
 <script>
 (function(){
   const FIREBASE_URL = 'https://m-hisaab-default-rtdb.asia-southeast1.firebasedatabase.app';
   const DB_PATH = '/mill-hisaab-data.json';
-  const STAFF_PIN = '1947'; // staff must enter this to add/edit entries
-  let DATA = { suppliers: [], transactions: [] };
-  let LANG = 'bn'; // bn = Bengali-ish labels, en = English
-  let currentSupplierId = null;
-  let staffUnlocked = false;
-  let currentMode = 'supplier'; // 'supplier' or 'staff' - controls what buttons show on ledger screen
 
+  // THREE PINS — change these before going live
+  const STAFF_PIN  = '1947';   // can only ADD new entries
+  const ADMIN_PIN  = '2580';   // YOU — can edit/delete with audit trail
+
+  let DATA = { suppliers:[], transactions:[] };
+  let LANG = 'bn';
+  let currentSupplierId = null;
+  let currentMode = 'supplier'; // 'supplier' | 'staff' | 'admin'
+
+  // ── TRANSLATIONS ──────────────────────────────────────────────
   const T = {
-    en: {
-      appTitle: "Mill Hisaab Khata", appSub: "Supplier Account Book",
-      home: "Home", staffMode: "Staff: Add Entry", supplierMode: "Suppliers: Check Hisaab",
-      back: "← Back",
-      allSuppliers: "All Suppliers", searchPh: "Search by name or phone",
-      addSupplier: "+ Add New Supplier", supplierName: "Supplier Name", supplierPhone: "Phone Number",
-      save: "Save", cancel: "Cancel",
-      enterPin: "Enter Staff PIN", pinHint: "(Ask office manager for PIN)", unlock: "Unlock",
-      wrongPin: "Wrong PIN, try again",
-      addTransaction: "+ Add New Entry", supply: "Paddy Supply", payment: "Payment Made",
-      date: "Date", qty: "Quantity (Quintal)", rate: "Rate (₹ per Quintal)", amount: "Amount (₹)",
-      note: "Note (optional, e.g. moisture deduction)",
-      totalSupplied: "Total Supplied", totalPaid: "Total Paid", balanceDue: "Balance Due (We Owe)",
-      clear: "All Clear", history: "Transaction History",
-      noTx: "No transactions yet", noSuppliers: "No suppliers added yet",
-      typeCol: "Type", qtyCol: "Qty", rateCol: "Rate", amtCol: "Amount", balCol: "Balance",
-      confirmDelete: "Delete this entry?", delete: "Delete", edit: "Edit",
-      printSlip: "Share / Print Statement", lang: "বাংলা",
-      welcomeSupplier: "Welcome! Find your name below to see your hisaab.",
-      welcomeStaff: "Staff Entry Mode — add today's paddy purchases and payments here.",
-      tapToView: "Tap a supplier to see full ledger",
-      addYourHisaab: "+ Add Your Hisaab (Supply You Gave)",
-      pendingReview: "Pending Review", confirmed: "Confirmed",
-      yourEntrySubmitted: "Your entry has been sent for office confirmation.",
-      pendingReviewNote: "This entry is waiting for office to confirm. It will not count in balance until confirmed.",
-      pendingEntriesStaff: "Pending Supplier Entries to Review", noPending: "No pending entries. All clear!",
-      approve: "✓ Confirm", reject: "✗ Reject", reviewQueue: "Review Queue",
-      submittedBy: "Submitted by supplier", rejectedTag: "Rejected",
-      rejectConfirm: "Reject this entry? Supplier will see it as rejected.",
-      approveSuccess: "Entry confirmed", rejectSuccess: "Entry rejected",
-      pickYourselfFirst: "First find your name, then add your hisaab",
-      enterYourPhone: "Enter Your Phone Number", phoneHint: "You will only be able to see your own hisaab",
-      viewMyHisaab: "View My Hisaab", phoneNotFound: "No hisaab found for this phone number. Please contact the office.",
-      enterPhoneNum: "Phone Number", logout: "Check a different number",
-      enterCode: "Enter Secret Code", codeHint: "Enter the 4-digit code given by the office",
-      yourCode: "Secret Code", codeForSupplier: "Give this code to the supplier (keep private)",
-      wrongCode: "Wrong phone number or code. Please contact the office.", regenCode: "Generate New Code",
-      editResend: "✎ Edit & Resend", rejectedNeedFix: "This entry was rejected. Fix and resend it.",
-      addPaymentReceived: "💵 Payment I Received", whatToAdd: "What do you want to add?",
-      resent: "Entry corrected and resent", amountReceived: "Amount Received (₹)"
+    en:{
+      appTitle:"SSRM Hisaab Khata", appSub:"Supplier Account Book",
+      supplierMode:"📒 Check My Hisaab", staffMode:"✍️ Staff: Add Entry", adminMode:"🔑 Admin",
+      back:"← Back", save:"Save", cancel:"Cancel",
+      enterPin:"Enter PIN", wrongPin:"Wrong PIN, try again", unlock:"Unlock",
+      staffPinHint:"Staff PIN — for adding entries only",
+      adminPinHint:"Admin PIN — for editing & deleting entries",
+      enterYourPhone:"Your Phone Number", enterCode:"Your Secret Code",
+      codeHint:"4-digit code given by office", viewMyHisaab:"View My Hisaab",
+      wrongCode:"Wrong number or code. Contact office.",
+      addSupplier:"+ Add New Supplier", supplierName:"Supplier Name", supplierPhone:"Phone Number",
+      yourCode:"Secret Code", codeForSupplier:"Give this code privately to the supplier",
+      regenCode:"Generate New Code",
+      addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
+      whatToAdd:"What to add?",
+      date:"Date", qty:"Quantity (Quintal)", rate:"Rate (₹/Quintal)", amount:"Amount (₹)",
+      note:"Note (optional — e.g. moisture deduction)",
+      totalSupplied:"Total Supplied", totalPaid:"Total Paid", balanceDue:"Balance Due (We Owe)",
+      balanceAdv:"Advance Paid", clear:"All Clear ✓",
+      history:"Transaction History", noTx:"No transactions yet", noSuppliers:"No suppliers added yet",
+      qtyCol:"Qty", rateCol:"Rate", amtCol:"₹", balCol:"Bal",
+      printSlip:"🖨 Share Statement", lang:"বাংলা",
+      welcomeSupplier:"Enter your phone number and secret code to see your hisaab.",
+      staffWelcome:"Staff mode — you can add new entries only. To correct an entry, call the admin.",
+      adminWelcome:"Admin mode — you can add, edit, and delete entries. All changes are logged.",
+      editEntry:"Edit Entry", deleteEntry:"Delete Entry",
+      confirmDelete:"Delete this entry? This cannot be undone.",
+      editedTag:"Edited", entryAdded:"Entry saved",
+      editSaved:"Entry updated", deleted:"Entry deleted",
+      originalVal:"Original", editedBy:"Edited by admin on",
+      deletedBy:"Deleted by admin on",
+      noSupplierPhone:"Please add a phone number to this supplier before sharing the code.",
     },
-    bn: {
-      appTitle: "মিল হিসাব খাতা", appSub: "সাপ্লায়ার একাউন্ট বুক",
-      home: "হোম", staffMode: "স্টাফ: এন্ট্রি যোগ করুন", supplierMode: "সাপ্লায়ার: হিসাব দেখুন",
-      back: "← ফিরে যান",
-      allSuppliers: "সব সাপ্লায়ার", searchPh: "নাম বা ফোন নম্বর দিয়ে খুঁজুন",
-      addSupplier: "+ নতুন সাপ্লায়ার যোগ করুন", supplierName: "সাপ্লায়ারের নাম", supplierPhone: "ফোন নম্বর",
-      save: "সেভ করুন", cancel: "বাতিল",
-      enterPin: "স্টাফ পিন দিন", pinHint: "(অফিস ম্যানেজারের কাছ থেকে পিন নিন)", unlock: "আনলক করুন",
-      wrongPin: "ভুল পিন, আবার চেষ্টা করুন",
-      addTransaction: "+ নতুন এন্ট্রি যোগ করুন", supply: "ধান সাপ্লাই", payment: "টাকা দেওয়া হয়েছে",
-      date: "তারিখ", qty: "পরিমাণ (কুইন্টাল)", rate: "দর (₹ প্রতি কুইন্টাল)", amount: "টাকা (₹)",
-      note: "নোট (যেমন - আর্দ্রতা কর্তন)",
-      totalSupplied: "মোট সাপ্লাই", totalPaid: "মোট পরিশোধ", balanceDue: "বাকি টাকা (আমাদের দিতে হবে)",
-      clear: "হিসাব ক্লিয়ার", history: "লেনদেনের তালিকা",
-      noTx: "এখনও কোনো লেনদেন নেই", noSuppliers: "এখনও কোনো সাপ্লায়ার যোগ করা হয়নি",
-      typeCol: "ধরন", qtyCol: "পরিমাণ", rateCol: "দর", amtCol: "টাকা", balCol: "ব্যালেন্স",
-      confirmDelete: "এই এন্ট্রি ডিলিট করবেন?", delete: "ডিলিট", edit: "এডিট",
-      printSlip: "শেয়ার / প্রিন্ট স্টেটমেন্ট", lang: "English",
-      welcomeSupplier: "স্বাগতম! আপনার হিসাব দেখতে নিচে আপনার নাম খুঁজুন।",
-      welcomeStaff: "স্টাফ এন্ট্রি মোড — আজকের ধান কেনা ও পেমেন্ট এখানে যোগ করুন।",
-      tapToView: "সম্পূর্ণ হিসাব দেখতে সাপ্লায়ারের নামে ক্লিক করুন",
-      addYourHisaab: "+ আপনার হিসাব যোগ করুন (আপনি যা সাপ্লাই করেছেন)",
-      pendingReview: "অফিসের অনুমোদনের অপেক্ষায়", confirmed: "নিশ্চিত হয়েছে",
-      yourEntrySubmitted: "আপনার এন্ট্রি অফিসে পাঠানো হয়েছে, অনুমোদনের অপেক্ষায়।",
-      pendingReviewNote: "এই এন্ট্রি অফিসের অনুমোদনের অপেক্ষায় আছে। অনুমোদন না হওয়া পর্যন্ত এটি ব্যালেন্সে যোগ হবে না।",
-      pendingEntriesStaff: "সাপ্লায়ারদের পাঠানো এন্ট্রি (অনুমোদন বাকি)", noPending: "কোনো এন্ট্রি বাকি নেই। সব ঠিক আছে!",
-      approve: "✓ অনুমোদন", reject: "✗ বাতিল", reviewQueue: "রিভিউ তালিকা",
-      submittedBy: "সাপ্লায়ার পাঠিয়েছেন", rejectedTag: "বাতিল হয়েছে",
-      rejectConfirm: "এই এন্ট্রি বাতিল করবেন? সাপ্লায়ার এটি বাতিল হিসেবে দেখবেন।",
-      approveSuccess: "এন্ট্রি অনুমোদিত হয়েছে", rejectSuccess: "এন্ট্রি বাতিল হয়েছে",
-      pickYourselfFirst: "প্রথমে আপনার নাম খুঁজুন, তারপর হিসাব যোগ করুন",
-      enterYourPhone: "আপনার ফোন নম্বর দিন", phoneHint: "শুধু আপনার নিজের হিসাব দেখতে পাবেন",
-      viewMyHisaab: "আমার হিসাব দেখুন", phoneNotFound: "এই ফোন নম্বরে কোনো হিসাব পাওয়া যায়নি। অফিসে যোগাযোগ করুন।",
-      enterPhoneNum: "ফোন নম্বর", logout: "অন্য নম্বর দিয়ে দেখুন",
-      enterCode: "গোপন কোড দিন", codeHint: "অফিস থেকে পাওয়া ৪ সংখ্যার কোড দিন",
-      yourCode: "গোপন কোড", codeForSupplier: "এই কোডটি সাপ্লায়ারকে দিন (গোপন রাখুন)",
-      wrongCode: "ভুল ফোন নম্বর বা কোড। অফিসে যোগাযোগ করুন।", regenCode: "নতুন কোড তৈরি করুন",
-      editResend: "✎ ঠিক করে আবার পাঠান", rejectedNeedFix: "এই এন্ট্রিটি বাতিল হয়েছে। ঠিক করে আবার পাঠান।",
-      addPaymentReceived: "💵 টাকা পেয়েছি এন্ট্রি", whatToAdd: "কী যোগ করতে চান?",
-      resent: "এন্ট্রি ঠিক করে আবার পাঠানো হয়েছে", amountReceived: "প্রাপ্ত টাকার পরিমাণ (₹)"
+    bn:{
+      appTitle:"SSRM হিসাব খাতা", appSub:"সাপ্লায়ার একাউন্ট বুক",
+      supplierMode:"📒 আমার হিসাব দেখুন", staffMode:"✍️ স্টাফ: এন্ট্রি যোগ করুন", adminMode:"🔑 অ্যাডমিন",
+      back:"← ফিরে যান", save:"সেভ করুন", cancel:"বাতিল",
+      enterPin:"পিন দিন", wrongPin:"ভুল পিন, আবার চেষ্টা করুন", unlock:"আনলক করুন",
+      staffPinHint:"স্টাফ পিন — শুধু নতুন এন্ট্রি যোগ করতে পারবেন",
+      adminPinHint:"অ্যাডমিন পিন — এন্ট্রি এডিট ও ডিলিট করতে পারবেন",
+      enterYourPhone:"আপনার ফোন নম্বর", enterCode:"গোপন কোড",
+      codeHint:"অফিস থেকে পাওয়া ৪ সংখ্যার কোড", viewMyHisaab:"আমার হিসাব দেখুন",
+      wrongCode:"ভুল নম্বর বা কোড। অফিসে যোগাযোগ করুন।",
+      addSupplier:"+ নতুন সাপ্লায়ার যোগ করুন", supplierName:"সাপ্লায়ারের নাম", supplierPhone:"ফোন নম্বর",
+      yourCode:"গোপন কোড", codeForSupplier:"এই কোডটি সাপ্লায়ারকে গোপনে দিন",
+      regenCode:"নতুন কোড তৈরি করুন",
+      addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
+      whatToAdd:"কী যোগ করতে চান?",
+      date:"তারিখ", qty:"পরিমাণ (কুইন্টাল)", rate:"দর (₹/কুইন্টাল)", amount:"টাকা (₹)",
+      note:"নোট (যেমন — আর্দ্রতা কর্তন)",
+      totalSupplied:"মোট সাপ্লাই", totalPaid:"মোট পরিশোধ", balanceDue:"বাকি টাকা (আমাদের দিতে হবে)",
+      balanceAdv:"অগ্রিম দেওয়া হয়েছে", clear:"হিসাব ক্লিয়ার ✓",
+      history:"লেনদেনের তালিকা", noTx:"এখনও কোনো লেনদেন নেই", noSuppliers:"এখনও কোনো সাপ্লায়ার নেই",
+      qtyCol:"পরিমাণ", rateCol:"দর", amtCol:"টাকা", balCol:"ব্যালেন্স",
+      printSlip:"🖨 স্টেটমেন্ট শেয়ার করুন", lang:"English",
+      welcomeSupplier:"আপনার ফোন নম্বর ও গোপন কোড দিয়ে হিসাব দেখুন।",
+      staffWelcome:"স্টাফ মোড — শুধু নতুন এন্ট্রি যোগ করতে পারবেন। কোনো ভুল হলে অ্যাডমিনকে জানান।",
+      adminWelcome:"অ্যাডমিন মোড — এন্ট্রি যোগ, এডিট ও ডিলিট করতে পারবেন। সব পরিবর্তন রেকর্ড থাকবে।",
+      editEntry:"এন্ট্রি এডিট করুন", deleteEntry:"এন্ট্রি ডিলিট করুন",
+      confirmDelete:"এই এন্ট্রি ডিলিট করবেন? এটি আর ফিরিয়ে আনা যাবে না।",
+      editedTag:"এডিট করা হয়েছে", entryAdded:"এন্ট্রি সেভ হয়েছে",
+      editSaved:"এন্ট্রি আপডেট হয়েছে", deleted:"এন্ট্রি ডিলিট হয়েছে",
+      originalVal:"আসল মান", editedBy:"অ্যাডমিন এডিট করেছেন",
+      deletedBy:"অ্যাডমিন ডিলিট করেছেন",
+      noSupplierPhone:"কোড শেয়ার করার আগে এই সাপ্লায়ারের ফোন নম্বর যোগ করুন।",
     }
   };
-  function t(k){ return T[LANG][k] || k; }
+  function t(k){ return T[LANG][k]||k; }
 
+  // ── FIREBASE ──────────────────────────────────────────────────
   async function loadData(){
     try{
-      const res = await fetch(FIREBASE_URL + DB_PATH);
+      const res = await fetch(FIREBASE_URL+DB_PATH);
       const json = await res.json();
-      if(json && (json.suppliers || json.transactions)){
-        DATA = { suppliers: json.suppliers || [], transactions: json.transactions || [] };
+      if(json && (json.suppliers||json.transactions)){
+        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[] };
       }
-    }catch(e){ console.log('No existing data or fetch failed, starting fresh.', e); }
+    }catch(e){ console.log('Fresh start',e); }
   }
   async function saveData(){
     try{
-      const res = await fetch(FIREBASE_URL + DB_PATH, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(DATA)
+      const res = await fetch(FIREBASE_URL+DB_PATH,{
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DATA)
       });
-      if(!res.ok){ throw new Error('Save failed: ' + res.status); }
-    }catch(e){ console.error('Save failed', e); showToast(LANG==='bn' ? 'ইন্টারনেট সমস্যা — আবার চেষ্টা করুন' : 'Network issue — please try again'); }
+      if(!res.ok) throw new Error(res.status);
+    }catch(e){
+      showToast(LANG==='bn'?'ইন্টারনেট সমস্যা — আবার চেষ্টা করুন':'Network issue — please try again');
+    }
   }
 
+  // ── HELPERS ───────────────────────────────────────────────────
   function showToast(msg){
-    const old = document.querySelector('.toast');
-    if(old) old.remove();
-    const d = document.createElement('div');
-    d.className = 'toast'; d.textContent = msg;
+    document.querySelectorAll('.toast').forEach(x=>x.remove());
+    const d=document.createElement('div'); d.className='toast'; d.textContent=msg;
     document.getElementById('app-root').appendChild(d);
-    setTimeout(()=>d.remove(), 2200);
+    setTimeout(()=>d.remove(),2500);
   }
-
-  function fmtMoney(n){
-    return '₹' + Math.round(n).toLocaleString('en-IN');
-  }
+  function fmtMoney(n){ return '₹'+Math.round(n||0).toLocaleString('en-IN'); }
   function fmtDate(d){
-    try{
-      const dt = new Date(d);
-      return dt.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-    }catch(e){ return d; }
+    try{ return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+    catch(e){ return d; }
+  }
+  function nowStr(){ return new Date().toLocaleString('en-IN'); }
+  function escapeHtml(s){
+    return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+  function setScreen(html){
+    document.getElementById('screens').innerHTML=`<div class="scr active">${html}</div>`;
   }
 
   function supplierTx(id){
-    return DATA.transactions.filter(tx=>tx.supplierId===id).sort((a,b)=> new Date(a.date) - new Date(b.date) || (a.ts-b.ts));
+    return DATA.transactions
+      .filter(tx=>tx.supplierId===id && !tx.deleted)
+      .sort((a,b)=>new Date(a.date)-new Date(b.date)||(a.ts-b.ts));
   }
   function supplierBalance(id){
-    const txs = supplierTx(id);
-    let supplied=0, paid=0, pendingSupplied=0;
-    txs.forEach(tx=>{
-      if(tx.status==='rejected') return;
-      if(tx.status==='pending'){
-        if(tx.type==='supply') pendingSupplied += tx.amount;
-        return;
-      }
-      if(tx.type==='supply') supplied += tx.amount;
-      else paid += tx.amount;
+    let supplied=0, paid=0;
+    supplierTx(id).forEach(tx=>{
+      if(tx.type==='supply') supplied+=tx.amount;
+      else paid+=tx.amount;
     });
-    return {supplied, paid, due: supplied - paid, pendingSupplied};
+    return {supplied, paid, due:supplied-paid};
   }
 
-  // ---------- RENDER ----------
+  // ── RENDER SHELL ──────────────────────────────────────────────
   function render(){
-    const root = document.getElementById('root-inner');
-    root.innerHTML = `
+    document.getElementById('root-inner').innerHTML=`
       <div class="topbar">
-        <button class="lang-toggle" onclick="window.__app.toggleLang()">${t('lang')}</button>
-        <h1>${t('appTitle')}</h1>
-        <p>${t('appSub')}</p>
+        <button class="lang-toggle" onclick="A.toggleLang()">${t('lang')}</button>
+        <h1>${t('appTitle')}</h1><p>${t('appSub')}</p>
       </div>
-      <div id="screens"></div>
-    `;
+      <div id="screens"></div>`;
     renderHome();
-  }
-
-  function setScreen(html){
-    document.getElementById('screens').innerHTML = `<div class="scr active">${html}</div>`;
   }
 
   function renderHome(){
     setScreen(`
-      <div style="padding-top:6px;">
-        <button class="big-btn btn-green" onclick="window.__app.goSupplierList()">📒 ${t('supplierMode')}</button>
-        <button class="big-btn btn-orange" onclick="window.__app.goStaffGate()">✍️ ${t('staffMode')}</button>
-      </div>
-    `);
+      <div style="padding-top:8px;">
+        <button class="big-btn btn-green" onclick="A.goSupplierGate()">${t('supplierMode')}</button>
+        <button class="big-btn btn-orange" onclick="A.goPinGate('staff')">${t('staffMode')}</button>
+        <button class="big-btn btn-purple" onclick="A.goPinGate('admin')">${t('adminMode')}</button>
+      </div>`);
   }
 
-  // ---- Supplier (read) flow ----
-  function goSupplierList(){
-    currentMode = 'supplier';
-    currentSupplierId = null;
+  // ── PIN GATE ──────────────────────────────────────────────────
+  function goPinGate(role){
+    const hint = role==='admin' ? t('adminPinHint') : t('staffPinHint');
     setScreen(`
-      <span class="back-link" onclick="window.__app.goHome()">${t('back')}</span>
+      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
       <div class="card" style="text-align:center;">
-        <div style="font-size:40px; margin-bottom:8px;">🔒</div>
-        <div style="font-weight:700; font-size:17px; margin-bottom:4px;">${t('enterYourPhone')}</div>
-        <div style="font-size:13px; color:var(--muted); margin-bottom:16px;">${t('phoneHint')}</div>
-        <input type="tel" id="supplierPhoneInput" placeholder="${t('enterPhoneNum')}" style="text-align:center; font-size:20px;" inputmode="numeric"/>
-        <input type="password" id="supplierCodeInput" placeholder="${t('enterCode')}" style="text-align:center; font-size:20px; letter-spacing:4px;" inputmode="numeric" maxlength="4"/>
-        <div style="font-size:12px; color:var(--muted); margin:-6px 0 12px;">${t('codeHint')}</div>
-        <button class="big-btn btn-green" onclick="window.__app.supplierPhoneLogin()">${t('viewMyHisaab')}</button>
-      </div>
-    `);
+        <div style="font-size:36px;margin-bottom:8px;">${role==='admin'?'🔑':'✍️'}</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px;">${t('enterPin')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${hint}</div>
+        <input type="password" id="pinInput" inputmode="numeric" maxlength="6"
+          placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:6px;"/>
+        <button class="big-btn ${role==='admin'?'btn-purple':'btn-orange'}"
+          onclick="A.checkPin('${role}')">${t('unlock')}</button>
+      </div>`);
   }
-  async function supplierPhoneLogin(){
-    const rawPhone = document.getElementById('supplierPhoneInput').value.trim();
-    const code = document.getElementById('supplierCodeInput').value.trim();
-    const digits = rawPhone.replace(/\D/g,'');
-    if(!digits || !code){ showToast(t('enterYourPhone')); return; }
-    showToast(LANG==='bn' ? 'লোড হচ্ছে...' : 'Loading...');
-    await loadData();
-    const match = DATA.suppliers.find(s =>
-      ((s.phone||'').replace(/\D/g,'').endsWith(digits) || digits.endsWith((s.phone||'').replace(/\D/g,'')))
-      && s.code === code
-    );
-    if(!match){
-      showToast(t('wrongCode'));
-      return;
-    }
-    currentSupplierId = match.id;
-    viewSupplier(match.id);
+  function checkPin(role){
+    const v = document.getElementById('pinInput').value;
+    const correct = role==='admin' ? ADMIN_PIN : STAFF_PIN;
+    if(v===correct){ currentMode=role; role==='admin'?goAdminHome():goStaffHome(); }
+    else showToast(t('wrongPin'));
   }
 
-  function viewSupplier(id){
-    currentSupplierId = id;
-    const s = DATA.suppliers.find(x=>x.id===id);
-    if(!s) return goSupplierList();
-    const txs = supplierTx(id);
-    const bal = supplierBalance(id);
-    let running = 0;
-    let rows = '';
+  // ── SUPPLIER GATE (phone + secret code) ───────────────────────
+  function goSupplierGate(){
+    currentMode='supplier';
+    setScreen(`
+      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:8px;">🔒</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('welcomeSupplier')}</div>
+        <label style="text-align:left;">${t('enterYourPhone')}</label>
+        <input type="tel" id="supPhone" inputmode="numeric" placeholder="98XXXXXXXX"/>
+        <label style="text-align:left;">${t('enterCode')}</label>
+        <input type="password" id="supCode" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="letter-spacing:4px;font-size:20px;"/>
+        <div style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">${t('codeHint')}</div>
+        <button class="big-btn btn-green" onclick="A.supplierLogin()">${t('viewMyHisaab')}</button>
+      </div>`);
+  }
+  async function supplierLogin(){
+    const phone = document.getElementById('supPhone').value.trim().replace(/\D/g,'');
+    const code  = document.getElementById('supCode').value.trim();
+    if(!phone||!code){ showToast(t('enterYourPhone')); return; }
+    showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
+    await loadData();
+    const match = DATA.suppliers.find(s=>
+      (s.phone||'').replace(/\D/g,'').endsWith(phone) || phone.endsWith((s.phone||'').replace(/\D/g,''))
+      ? s.code===code : false
+    );
+    if(!match){ showToast(t('wrongCode')); return; }
+    currentSupplierId=match.id;
+    viewLedger(match.id);
+  }
+
+  // ── LEDGER VIEW (shared by all modes) ─────────────────────────
+  function viewLedger(id){
+    currentSupplierId=id;
+    const s=DATA.suppliers.find(x=>x.id===id);
+    if(!s) return renderHome();
+    const txs=supplierTx(id);
+    const bal=supplierBalance(id);
+    let running=0, rows='';
+
     if(txs.length===0){
-      rows = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">${t('noTx')}</td></tr>`;
+      rows=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">${t('noTx')}</td></tr>`;
     } else {
       txs.forEach(tx=>{
-        const isPending = tx.status === 'pending';
-        const isRejected = tx.status === 'rejected';
-        if(!isPending && !isRejected){
-          running += (tx.type==='supply' ? tx.amount : -tx.amount);
+        running+=(tx.type==='supply'?tx.amount:-tx.amount);
+        const edited = tx.editLog && tx.editLog.length>0;
+        let auditHtml='';
+        if(edited && currentMode==='admin'){
+          const last=tx.editLog[tx.editLog.length-1];
+          auditHtml=`<div class="audit-trail">${t('editedBy')} ${last.on}<br>${t('originalVal')}: ${fmtMoney(last.origAmount)}</div>`;
         }
-        let statusTag = '';
-        if(isPending) statusTag = `<br><span class="tag" style="background:#fef3c7; color:#92400e;">${t('pendingReview')}</span>`;
-        if(isRejected) statusTag = `<br><span class="tag" style="background:#fee2e2; color:#991b1b;">${t('rejectedTag')}</span>`;
-        if(isRejected && currentMode==='supplier' && tx.source==='supplier'){
-          statusTag += `<br><button class="btn-sm" style="background:var(--accent); margin-top:4px; padding:6px 10px; font-size:12px;" onclick='window.__app.showSupplierTxForm("${tx.supplierId}","${tx.type}",${JSON.stringify(tx).replace(/'/g,"&#39;")})'>${t('editResend')}</button>`;
-        }
-        rows += `<tr style="${isPending?'background:#fffbeb;':''}${isRejected?'opacity:0.55;':''}">
-          <td>${fmtDate(tx.date)}<br><span class="tag ${tx.type==='supply'?'tag-supply':'tag-payment'}">${tx.type==='supply'?t('supply'):t('payment')}</span>${statusTag}</td>
-          <td>${tx.type==='supply' ? (tx.qty+' Q') : '-'}</td>
-          <td>${tx.type==='supply' ? fmtMoney(tx.rate) : '-'}</td>
+        const adminBtns = currentMode==='admin' ? `
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn-sm btn-purple" onclick='A.showEditForm("${id}","${tx.id}")'>${t('editEntry')}</button>
+            <button class="btn-sm btn-red" onclick='A.deleteTx("${id}","${tx.id}")'>${t('deleteEntry')}</button>
+          </div>` : '';
+        rows+=`<tr>
+          <td>${fmtDate(tx.date)}<br>
+            <span class="tag ${tx.type==='supply'?'tag-supply':'tag-payment'}">${tx.type==='supply'?t('supply'):t('payment')}</span>
+            ${edited?`<span class="tag tag-edited">${t('editedTag')}</span>`:''}
+            ${auditHtml}${adminBtns}
+          </td>
+          <td>${tx.type==='supply'?(tx.qty||0)+' Q':'-'}</td>
+          <td>${tx.type==='supply'?fmtMoney(tx.rate):'-'}</td>
           <td>${fmtMoney(tx.amount)}</td>
-          <td style="font-weight:700;">${isPending||isRejected ? '-' : fmtMoney(running)}</td>
+          <td style="font-weight:700;">${fmtMoney(running)}</td>
         </tr>`;
       });
     }
-    const pendingNote = bal.pendingSupplied > 0
-      ? `<div class="card" style="background:#fffbeb; border:1px solid #fde68a;">
-          <div style="font-size:13px; color:#92400e;">⏳ ${fmtMoney(bal.pendingSupplied)} ${t('pendingReviewNote')}</div>
+
+    const backFn = currentMode==='admin'?'A.goAdminHome()':currentMode==='staff'?'A.goStaffHome()':'A.goSupplierGate()';
+    const addBtn = (currentMode==='staff'||currentMode==='admin')
+      ? `<button class="big-btn btn-orange" onclick="A.showAddTxForm('${id}')">${t('addTransaction')}</button>` : '';
+    const codeBadge = currentMode==='admin'
+      ? `<div class="card" style="text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${t('yourCode')}</div>
+          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:var(--admin);">${s.code||'----'}</div>
+          <button class="btn-sm btn-purple" style="margin-top:8px;" onclick="A.regenCode('${id}')">${t('regenCode')}</button>
         </div>` : '';
-    const addYourHisaabBtn = currentMode==='supplier'
-      ? `<button class="big-btn btn-orange" onclick="window.__app.showSupplierAddForm('${id}')">${t('addYourHisaab')}</button>` : '';
-    const staffReviewSection = currentMode==='staff'
-      ? `<button class="big-btn btn-green" onclick="window.__app.showAddTxPickSupplier()">${t('addTransaction')}</button>
-         <div class="card" style="text-align:center; background:#f5f3ff; border:1px solid #ddd6fe;">
-           <div style="font-size:13px; color:var(--muted); margin-bottom:4px;">${t('yourCode')}</div>
-           <div style="font-size:28px; font-weight:800; letter-spacing:6px; color:#5b21b6;">${s.code||'----'}</div>
-           <button class="btn-sm" style="background:#5b21b6; margin-top:8px;" onclick="window.__app.regenCode('${id}')">${t('regenCode')}</button>
-         </div>` : '';
+    const modeBadge = currentMode==='admin'
+      ? `<span class="mode-badge" style="background:#ede9fe;color:var(--admin);">🔑 Admin</span>`
+      : currentMode==='staff'
+      ? `<span class="mode-badge" style="background:#fff7ed;color:#92400e;">✍️ Staff</span>` : '';
+
     setScreen(`
-      <span class="back-link" onclick="window.__app.${currentMode==='staff'?'goStaffHome':'goSupplierList'}()">${t('back')}</span>
+      <span class="back-link" onclick="${backFn}">${t('back')}</span>
+      ${modeBadge}
       <div class="card">
         <div class="sname" style="font-size:19px;">${escapeHtml(s.name)}</div>
         <div class="sphone">${escapeHtml(s.phone||'')}</div>
@@ -339,366 +350,240 @@
         <div class="card"><div class="num" style="color:var(--brand);">${fmtMoney(bal.supplied)}</div><div class="lbl">${t('totalSupplied')}</div></div>
         <div class="card"><div class="num" style="color:#1e40af;">${fmtMoney(bal.paid)}</div><div class="lbl">${t('totalPaid')}</div></div>
       </div>
-      <div class="card" style="text-align:center; background:${bal.due>0?'#fef2f2':'#f0fdf4'};">
-        <div class="num" style="font-size:24px; color:${bal.due>0?'var(--danger)':'var(--ok)'};">${fmtMoney(Math.abs(bal.due))}</div>
-        <div class="lbl">${bal.due===0 ? t('clear') : t('balanceDue')}</div>
+      <div class="card" style="text-align:center;background:${bal.due>0?'#fef2f2':bal.due<0?'#eff6ff':'#f0fdf4'};">
+        <div class="num" style="font-size:24px;color:${bal.due>0?'var(--danger)':bal.due<0?'#1e40af':'var(--ok)'};">${fmtMoney(Math.abs(bal.due))}</div>
+        <div class="lbl">${bal.due===0?t('clear'):bal.due>0?t('balanceDue'):t('balanceAdv')}</div>
       </div>
-      ${pendingNote}
-      ${addYourHisaabBtn}
-      ${staffReviewSection}
+      ${codeBadge}
+      ${addBtn}
       <div class="card" style="overflow-x:auto;">
-        <div style="font-weight:700; margin-bottom:8px;">${t('history')}</div>
+        <div style="font-weight:700;margin-bottom:8px;">${t('history')}</div>
         <table>
           <thead><tr><th>${t('date')}</th><th>${t('qtyCol')}</th><th>${t('rateCol')}</th><th>${t('amtCol')}</th><th>${t('balCol')}</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <button class="big-btn btn-grey" onclick="window.__app.printStatement('${id}')">🖨️ ${t('printSlip')}</button>
-    `);
+      <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>`);
   }
 
-  function printStatement(id){
-    const s = DATA.suppliers.find(x=>x.id===id);
-    const bal = supplierBalance(id);
-    const txs = supplierTx(id);
-    let body = `${s.name} (${s.phone||''})\n`;
-    body += `${t('totalSupplied')}: ${fmtMoney(bal.supplied)} | ${t('totalPaid')}: ${fmtMoney(bal.paid)}\n`;
-    body += `${t('balanceDue')}: ${fmtMoney(Math.abs(bal.due))}\n\n`;
-    txs.forEach(tx=>{
-      body += `${fmtDate(tx.date)} - ${tx.type==='supply'?t('supply'):t('payment')} - ${fmtMoney(tx.amount)}\n`;
-    });
-    if(navigator.share){
-      navigator.share({title: s.name + ' Hisaab', text: body}).catch(()=>{});
-    } else {
-      const w = window.open('', '_blank');
-      w.document.write('<pre style="font-size:16px; font-family:sans-serif;">'+escapeHtml(body)+'</pre>');
-    }
-  }
-
-  // ---- Staff flow ----
-  function goStaffGate(){
-    currentMode = 'staff';
-    if(staffUnlocked){ return goStaffHome(); }
+  // ── ADD ENTRY (staff + admin) ─────────────────────────────────
+  function showAddTxForm(sid){
+    const today=new Date().toISOString().slice(0,10);
+    const backFn=`A.viewLedger('${sid}')`;
     setScreen(`
-      <span class="back-link" onclick="window.__app.goHome()">${t('back')}</span>
-      <div class="card" style="text-align:center;">
-        <div style="font-weight:700; font-size:16px; margin-bottom:4px;">${t('enterPin')}</div>
-        <div style="font-size:13px; color:var(--muted); margin-bottom:14px;">${t('pinHint')}</div>
-        <input type="password" inputmode="numeric" id="pinInput" placeholder="••••" style="text-align:center; font-size:22px; letter-spacing:6px;" maxlength="6"/>
-        <button class="big-btn btn-green" onclick="window.__app.checkPin()">${t('unlock')}</button>
-      </div>
-    `);
+      <span class="back-link" onclick="${backFn}">${t('back')}</span>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:12px;">${t('whatToAdd')}</div>
+        <button class="big-btn btn-green" onclick="A.showTxTypeForm('${sid}','supply')">📦 ${t('supply')}</button>
+        <button class="big-btn btn-blue" onclick="A.showTxTypeForm('${sid}','payment')">💵 ${t('payment')}</button>
+      </div>`);
   }
-  function checkPin(){
-    const v = document.getElementById('pinInput').value;
-    if(v === STAFF_PIN){
-      staffUnlocked = true;
-      goStaffHome();
-    } else {
-      showToast(t('wrongPin'));
+  function showTxTypeForm(sid, type, editId){
+    const today=new Date().toISOString().slice(0,10);
+    const existing = editId ? DATA.transactions.find(x=>x.id===editId) : null;
+    const e=existing||{};
+    const isEdit=!!editId;
+    const backFn=isEdit?`A.viewLedger('${sid}')`:`A.showAddTxForm('${sid}')`;
+    const title=isEdit?t('editEntry'):(type==='supply'?`📦 ${t('supply')}`:`💵 ${t('payment')}`);
+    const supplyFields = type==='supply' ? `
+      <div class="row">
+        <div><label>${t('qty')}</label><input type="number" id="fQty" value="${e.qty||''}" oninput="A.calcAmt()"/></div>
+        <div><label>${t('rate')}</label><input type="number" id="fRate" value="${e.rate||''}" oninput="A.calcAmt()"/></div>
+      </div>
+      <label>${t('amount')}</label>
+      <input type="number" id="fAmt" value="${e.amount||''}" readonly style="background:#f3f4f6;"/>` : `
+      <label>${t('amount')}</label>
+      <input type="number" id="fAmt" value="${e.amount||''}"/>`;
+    const btnColor=isEdit?'btn-purple':(type==='supply'?'btn-green':'btn-blue');
+    setScreen(`
+      <span class="back-link" onclick="${backFn}">${t('back')}</span>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;">${title}</div>
+        <label>${t('date')}</label>
+        <input type="date" id="fDate" value="${e.date||today}"/>
+        ${supplyFields}
+        <label>${t('note')}</label>
+        <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
+        <button class="big-btn ${btnColor}"
+          onclick="A.saveTx('${sid}','${type}','${editId||''}')">${t('save')}</button>
+      </div>`);
+  }
+  function calcAmt(){
+    const q=parseFloat(document.getElementById('fQty').value)||0;
+    const r=parseFloat(document.getElementById('fRate').value)||0;
+    document.getElementById('fAmt').value=q*r||'';
+  }
+  async function saveTx(sid, type, editId){
+    const date=document.getElementById('fDate').value;
+    const amount=parseFloat(document.getElementById('fAmt').value)||0;
+    const note=document.getElementById('fNote').value.trim();
+    let qty=0,rate=0;
+    if(type==='supply'){
+      qty=parseFloat(document.getElementById('fQty').value)||0;
+      rate=parseFloat(document.getElementById('fRate').value)||0;
     }
+    if(!date||amount<=0){ showToast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields'); return; }
+
+    if(editId){
+      // ADMIN EDIT — keep full audit trail
+      const tx=DATA.transactions.find(x=>x.id===editId);
+      if(!tx) return;
+      if(!tx.editLog) tx.editLog=[];
+      tx.editLog.push({ on:nowStr(), origAmount:tx.amount, origQty:tx.qty, origRate:tx.rate, origDate:tx.date, origNote:tx.note });
+      tx.date=date; tx.amount=amount; tx.note=note;
+      if(type==='supply'){ tx.qty=qty; tx.rate=rate; }
+      await saveData();
+      showToast(t('editSaved'));
+    } else {
+      // NEW ENTRY (staff or admin)
+      const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, qty, rate, amount, note,
+        ts:Date.now(), addedBy:currentMode, editLog:[] };
+      DATA.transactions.push(tx);
+      await saveData();
+      showToast(t('entryAdded'));
+    }
+    viewLedger(sid);
   }
 
+  // ── ADMIN EDIT / DELETE ────────────────────────────────────────
+  function showEditForm(sid, txId){
+    const tx=DATA.transactions.find(x=>x.id===txId);
+    if(!tx) return;
+    showTxTypeForm(sid, tx.type, txId);
+  }
+  async function deleteTx(sid, txId){
+    if(!confirm(t('confirmDelete'))) return;
+    const tx=DATA.transactions.find(x=>x.id===txId);
+    if(!tx) return;
+    // soft-delete: keep record but mark deleted with audit info
+    tx.deleted=true;
+    tx.deletedOn=nowStr();
+    await saveData();
+    showToast(t('deleted'));
+    viewLedger(sid);
+  }
+
+  // ── STAFF HOME ────────────────────────────────────────────────
   async function goStaffHome(){
-    currentMode = 'staff';
+    currentMode='staff';
     await loadData();
-    const pendingCount = DATA.transactions.filter(tx=>tx.status==='pending').length;
-    let list = '';
+    let list='';
     if(DATA.suppliers.length===0){
-      list = `<div class="empty">${t('noSuppliers')}</div>`;
+      list=`<div class="empty">${t('noSuppliers')}</div>`;
     } else {
       DATA.suppliers.forEach(s=>{
-        const bal = supplierBalance(s.id);
-        list += `
-          <div class="supplier-item" onclick="window.__app.viewSupplier('${s.id}')">
-            <div><div class="sname">${escapeHtml(s.name)}</div><div class="sphone">${escapeHtml(s.phone||'')}</div></div>
-            <div class="sbal ${bal.due>0?'bal-due':'bal-clear'}">${bal.due===0?t('clear'):fmtMoney(Math.abs(bal.due))}</div>
-          </div>`;
+        const bal=supplierBalance(s.id);
+        list+=`<div class="supplier-item" onclick="A.viewLedger('${s.id}')">
+          <div><div class="sname">${escapeHtml(s.name)}</div><div class="sphone">${escapeHtml(s.phone||'')}</div></div>
+          <div class="sbal ${bal.due>0?'bal-due':'bal-clear'}">${bal.due===0?t('clear'):fmtMoney(Math.abs(bal.due))}</div>
+        </div>`;
       });
     }
-    const pendingBtn = pendingCount > 0
-      ? `<button class="big-btn btn-red" onclick="window.__app.goReviewQueue()">🔔 ${t('pendingEntriesStaff')} (${pendingCount})</button>`
-      : '';
     setScreen(`
-      <span class="back-link" onclick="window.__app.goHome()">${t('back')}</span>
-      <div class="card" style="background:#fff7ed; border:1px solid #fde6c8;">
-        <div style="font-size:14px; color:#92400e;">${t('welcomeStaff')}</div>
+      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
+      <div class="card" style="background:#fff7ed;border:1px solid #fde6c8;">
+        <div style="font-size:13px;color:#92400e;">✍️ ${t('staffWelcome')}</div>
       </div>
-      ${pendingBtn}
-      <button class="big-btn btn-green" onclick="window.__app.showAddSupplier()">${t('addSupplier')}</button>
-      <button class="big-btn btn-orange" onclick="window.__app.showAddTxPickSupplier()">${t('addTransaction')}</button>
-      <div style="font-weight:700; color:var(--muted); font-size:13px; margin:10px 0 8px;">${t('allSuppliers')}</div>
-      ${list}
-    `);
+      <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
+      ${list}`);
   }
 
+  // ── ADMIN HOME ────────────────────────────────────────────────
+  async function goAdminHome(){
+    currentMode='admin';
+    await loadData();
+    let list='';
+    if(DATA.suppliers.length===0){
+      list=`<div class="empty">${t('noSuppliers')}</div>`;
+    } else {
+      DATA.suppliers.forEach(s=>{
+        const bal=supplierBalance(s.id);
+        list+=`<div class="supplier-item" onclick="A.viewLedger('${s.id}')">
+          <div><div class="sname">${escapeHtml(s.name)}</div><div class="sphone">${escapeHtml(s.phone||'')}</div></div>
+          <div class="sbal ${bal.due>0?'bal-due':'bal-clear'}">${bal.due===0?t('clear'):fmtMoney(Math.abs(bal.due))}</div>
+        </div>`;
+      });
+    }
+    setScreen(`
+      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
+      <div class="card" style="background:#f5f3ff;border:1px solid #ddd6fe;">
+        <div style="font-size:13px;color:var(--admin);">🔑 ${t('adminWelcome')}</div>
+      </div>
+      <button class="big-btn btn-purple" onclick="A.showAddSupplier()">${t('addSupplier')}</button>
+      <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
+      ${list}`);
+  }
+
+  // ── ADD SUPPLIER (admin only) ─────────────────────────────────
   function showAddSupplier(){
     setScreen(`
-      <span class="back-link" onclick="window.__app.goStaffHome()">${t('back')}</span>
+      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
       <div class="card">
         <label>${t('supplierName')}</label>
         <input type="text" id="newName" placeholder="${t('supplierName')}"/>
         <label>${t('supplierPhone')}</label>
-        <input type="tel" id="newPhone" placeholder="98XXXXXXXX"/>
-        <button class="big-btn btn-green" onclick="window.__app.saveSupplier()">${t('save')}</button>
-      </div>
-    `);
+        <input type="tel" id="newPhone" placeholder="98XXXXXXXX" inputmode="numeric"/>
+        <button class="big-btn btn-purple" onclick="A.saveSupplier()">${t('save')}</button>
+      </div>`);
   }
   async function saveSupplier(){
-    const name = document.getElementById('newName').value.trim();
-    const phone = document.getElementById('newPhone').value.trim();
-    if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter a name'); return; }
-    const id = 's_' + Date.now();
-    const code = String(Math.floor(1000 + Math.random()*9000));
-    DATA.suppliers.push({id, name, phone, code});
+    const name=document.getElementById('newName').value.trim();
+    const phone=document.getElementById('newPhone').value.trim();
+    if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
+    const code=String(Math.floor(1000+Math.random()*9000));
+    const id='s_'+Date.now();
+    DATA.suppliers.push({id,name,phone,code});
     await saveData();
     showSupplierCodeScreen(id);
   }
   function showSupplierCodeScreen(id){
-    const s = DATA.suppliers.find(x=>x.id===id);
+    const s=DATA.suppliers.find(x=>x.id===id);
     setScreen(`
-      <span class="back-link" onclick="window.__app.goStaffHome()">${t('back')}</span>
+      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
       <div class="card" style="text-align:center;">
-        <div style="font-weight:700; font-size:16px; margin-bottom:10px;">✅ ${escapeHtml(s.name)}</div>
-        <div style="font-size:13px; color:var(--muted); margin-bottom:6px;">${t('codeForSupplier')}</div>
-        <div style="font-size:40px; font-weight:800; letter-spacing:8px; color:var(--brand); margin:14px 0;">${s.code}</div>
-        <button class="big-btn btn-green" onclick="window.__app.goStaffHome()">${t('save')}</button>
-      </div>
-    `);
+        <div style="font-weight:700;font-size:17px;margin-bottom:6px;">✅ ${escapeHtml(s.name)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${t('codeForSupplier')}</div>
+        <div style="font-size:44px;font-weight:800;letter-spacing:10px;color:var(--admin);margin:16px 0;">${s.code}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">📱 ${s.phone||''}</div>
+        <button class="big-btn btn-purple" onclick="A.goAdminHome()">${t('save')}</button>
+      </div>`);
   }
-
-  function showAddTxPickSupplier(){
-    let opts = '<option value="">--</option>';
-    DATA.suppliers.forEach(s=> opts += `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.phone||'')})</option>`);
-    setScreen(`
-      <span class="back-link" onclick="window.__app.goStaffHome()">${t('back')}</span>
-      <div class="card">
-        <label>${t('allSuppliers')}</label>
-        <select id="txSupplier">${opts}</select>
-        <button class="big-btn btn-green" onclick="window.__app.showAddTxForm()">${t('addTransaction')}</button>
-      </div>
-    `);
-  }
-
-  function showAddTxForm(){
-    const sid = document.getElementById('txSupplier').value;
-    if(!sid){ showToast(LANG==='bn'?'সাপ্লায়ার বাছুন':'Pick a supplier'); return; }
-    const today = new Date().toISOString().slice(0,10);
-    setScreen(`
-      <span class="back-link" onclick="window.__app.showAddTxPickSupplier()">${t('back')}</span>
-      <div class="card">
-        <div class="row">
-          <div><button class="big-btn btn-green" style="margin-bottom:0;" onclick="window.__app.setTxType('${sid}','supply')">📦 ${t('supply')}</button></div>
-          <div><button class="big-btn btn-orange" style="margin-bottom:0;" onclick="window.__app.setTxType('${sid}','payment')">💵 ${t('payment')}</button></div>
-        </div>
-      </div>
-    `);
-  }
-
-  function setTxType(sid, type){
-    const today = new Date().toISOString().slice(0,10);
-    if(type==='supply'){
-      setScreen(`
-        <span class="back-link" onclick="window.__app.showAddTxForm()">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700; margin-bottom:10px;">📦 ${t('supply')}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="txDate" value="${today}"/>
-          <div class="row">
-            <div><label>${t('qty')}</label><input type="number" id="txQty" oninput="window.__app.recalc()"/></div>
-            <div><label>${t('rate')}</label><input type="number" id="txRate" oninput="window.__app.recalc()"/></div>
-          </div>
-          <label>${t('amount')}</label>
-          <input type="number" id="txAmount" readonly style="background:#f3f4f6;"/>
-          <label>${t('note')}</label>
-          <input type="text" id="txNote"/>
-          <button class="big-btn btn-green" onclick="window.__app.saveTx('${sid}','supply')">${t('save')}</button>
-        </div>
-      `);
-    } else {
-      setScreen(`
-        <span class="back-link" onclick="window.__app.showAddTxForm()">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700; margin-bottom:10px;">💵 ${t('payment')}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="txDate" value="${today}"/>
-          <label>${t('amount')}</label>
-          <input type="number" id="txAmount"/>
-          <label>${t('note')}</label>
-          <input type="text" id="txNote"/>
-          <button class="big-btn btn-orange" onclick="window.__app.saveTx('${sid}','payment')">${t('save')}</button>
-        </div>
-      `);
-    }
-  }
-  function recalc(){
-    const q = parseFloat(document.getElementById('txQty').value) || 0;
-    const r = parseFloat(document.getElementById('txRate').value) || 0;
-    document.getElementById('txAmount').value = (q*r) || '';
-  }
-  async function saveTx(sid, type){
-    const date = document.getElementById('txDate').value;
-    const amount = parseFloat(document.getElementById('txAmount').value) || 0;
-    const note = document.getElementById('txNote').value.trim();
-    if(!date || amount<=0){ showToast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields'); return; }
-    const tx = { id:'t_'+Date.now(), supplierId: sid, type, date, amount, note, ts: Date.now(), status:'confirmed', source:'staff' };
-    if(type==='supply'){
-      tx.qty = parseFloat(document.getElementById('txQty').value) || 0;
-      tx.rate = parseFloat(document.getElementById('txRate').value) || 0;
-    }
-    DATA.transactions.push(tx);
-    await saveData();
-    showToast(LANG==='bn'?'এন্ট্রি সেভ হয়েছে':'Entry saved');
-    viewSupplier(sid);
-  }
-
-  // ---- Supplier self-entry (their claimed hisaab) ----
-  function showSupplierAddForm(sid){
-    setScreen(`
-      <span class="back-link" onclick="window.__app.viewSupplier('${sid}')">${t('back')}</span>
-      <div class="card">
-        <div style="font-weight:700; margin-bottom:12px;">${t('whatToAdd')}</div>
-        <button class="big-btn btn-orange" onclick="window.__app.showSupplierTxForm('${sid}','supply')">📦 ${t('supply')}</button>
-        <button class="big-btn" style="background:#1e40af;" onclick="window.__app.showSupplierTxForm('${sid}','payment')">${t('addPaymentReceived')}</button>
-      </div>
-    `);
-  }
-  function showSupplierTxForm(sid, type, editTx){
-    const today = new Date().toISOString().slice(0,10);
-    const e = editTx || {};
-    const dateVal = e.date || today;
-    const backFn = editTx ? `window.__app.viewSupplier('${sid}')` : `window.__app.showSupplierAddForm('${sid}')`;
-    if(type==='supply'){
-      setScreen(`
-        <span class="back-link" onclick="${backFn}">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700; margin-bottom:10px;">📦 ${editTx ? t('editResend') : t('addYourHisaab')}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="sTxDate" value="${dateVal}"/>
-          <div class="row">
-            <div><label>${t('qty')}</label><input type="number" id="sTxQty" value="${e.qty||''}" oninput="window.__app.supplierRecalc()"/></div>
-            <div><label>${t('rate')}</label><input type="number" id="sTxRate" value="${e.rate||''}" oninput="window.__app.supplierRecalc()"/></div>
-          </div>
-          <label>${t('amount')}</label>
-          <input type="number" id="sTxAmount" value="${e.amount||''}" readonly style="background:#f3f4f6;"/>
-          <label>${t('note')}</label>
-          <input type="text" id="sTxNote" value="${escapeAttr(e.note||'')}"/>
-          <button class="big-btn btn-orange" onclick="window.__app.saveSupplierTx('${sid}','supply','${editTx?editTx.id:''}')">${t('save')}</button>
-        </div>
-      `);
-    } else {
-      setScreen(`
-        <span class="back-link" onclick="${backFn}">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700; margin-bottom:10px;">${t('addPaymentReceived')}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="sTxDate" value="${dateVal}"/>
-          <label>${t('amountReceived')}</label>
-          <input type="number" id="sTxAmount" value="${e.amount||''}"/>
-          <label>${t('note')}</label>
-          <input type="text" id="sTxNote" value="${escapeAttr(e.note||'')}"/>
-          <button class="big-btn" style="background:#1e40af;" onclick="window.__app.saveSupplierTx('${sid}','payment','${editTx?editTx.id:''}')">${t('save')}</button>
-        </div>
-      `);
-    }
-  }
-  function supplierRecalc(){
-    const q = parseFloat(document.getElementById('sTxQty').value) || 0;
-    const r = parseFloat(document.getElementById('sTxRate').value) || 0;
-    document.getElementById('sTxAmount').value = (q*r) || '';
-  }
-  async function saveSupplierTx(sid, type, editTxId){
-    const date = document.getElementById('sTxDate').value;
-    const amount = parseFloat(document.getElementById('sTxAmount').value) || 0;
-    const note = document.getElementById('sTxNote').value.trim();
-    let qty=0, rate=0;
-    if(type==='supply'){
-      qty = parseFloat(document.getElementById('sTxQty').value) || 0;
-      rate = parseFloat(document.getElementById('sTxRate').value) || 0;
-    }
-    if(!date || amount<=0){ showToast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields'); return; }
-
-    if(editTxId){
-      const tx = DATA.transactions.find(x=>x.id===editTxId);
-      if(tx){
-        tx.date=date; tx.amount=amount; tx.note=note; tx.status='pending';
-        if(type==='supply'){ tx.qty=qty; tx.rate=rate; }
-        await saveData();
-        showToast(t('resent'));
-      }
-    } else {
-      const tx = { id:'t_'+Date.now(), supplierId: sid, type, date, qty, rate, amount, note,
-        ts: Date.now(), status:'pending', source:'supplier' };
-      DATA.transactions.push(tx);
-      await saveData();
-      showToast(t('yourEntrySubmitted'));
-    }
-    viewSupplier(sid);
-  }
-
-  // ---- Staff review queue for supplier-submitted entries ----
-  function goReviewQueue(){
-    const pending = DATA.transactions.filter(tx=>tx.status==='pending').sort((a,b)=>b.ts-a.ts);
-    let rows = '';
-    if(pending.length===0){
-      rows = `<div class="empty">${t('noPending')}</div>`;
-    } else {
-      pending.forEach(tx=>{
-        const s = DATA.suppliers.find(x=>x.id===tx.supplierId);
-        rows += `
-          <div class="card" style="border:1px solid #fde68a; background:#fffbeb;">
-            <div class="sname" style="font-size:16px;">${escapeHtml(s?s.name:'?')}</div>
-            <div class="sphone" style="margin-bottom:6px;">${t('submittedBy')} · ${fmtDate(tx.date)}</div>
-            <div style="font-size:15px; margin-bottom:4px;">${t('qty')}: <b>${tx.qty} Q</b> &nbsp; ${t('rate')}: <b>${fmtMoney(tx.rate)}</b></div>
-            <div style="font-size:17px; font-weight:800; color:var(--brand); margin-bottom:8px;">${t('amount')}: ${fmtMoney(tx.amount)}</div>
-            ${tx.note ? `<div style="font-size:13px; color:var(--muted); margin-bottom:8px;">${escapeHtml(tx.note)}</div>` : ''}
-            <div class="row">
-              <div><button class="btn-sm" style="background:var(--ok); width:100%;" onclick="window.__app.approveTx('${tx.id}')">${t('approve')}</button></div>
-              <div><button class="btn-sm" style="background:var(--danger); width:100%;" onclick="window.__app.rejectTx('${tx.id}')">${t('reject')}</button></div>
-            </div>
-          </div>`;
-      });
-    }
-    setScreen(`
-      <span class="back-link" onclick="window.__app.goStaffHome()">${t('back')}</span>
-      <div style="font-weight:700; font-size:17px; margin-bottom:12px;">${t('reviewQueue')}</div>
-      ${rows}
-    `);
-  }
-  async function approveTx(txId){
-    const tx = DATA.transactions.find(x=>x.id===txId);
-    if(tx){ tx.status = 'confirmed'; await saveData(); showToast(t('approveSuccess')); }
-    goReviewQueue();
-  }
-  async function rejectTx(txId){
-    if(!confirm(t('rejectConfirm'))) return;
-    const tx = DATA.transactions.find(x=>x.id===txId);
-    if(tx){ tx.status = 'rejected'; await saveData(); showToast(t('rejectSuccess')); }
-    goReviewQueue();
-  }
-
   async function regenCode(id){
-    const s = DATA.suppliers.find(x=>x.id===id);
+    const s=DATA.suppliers.find(x=>x.id===id);
     if(!s) return;
-    s.code = String(Math.floor(1000 + Math.random()*9000));
+    s.code=String(Math.floor(1000+Math.random()*9000));
     await saveData();
-    showSupplierCodeScreen(id);
+    showToast(LANG==='bn'?'নতুন কোড তৈরি হয়েছে':'New code generated');
+    viewLedger(id);
   }
 
+  // ── PRINT / SHARE ─────────────────────────────────────────────
+  function printStatement(id){
+    const s=DATA.suppliers.find(x=>x.id===id);
+    const bal=supplierBalance(id);
+    const txs=supplierTx(id);
+    let body=`${s.name} (${s.phone||''})\n`;
+    body+=`${t('totalSupplied')}: ${fmtMoney(bal.supplied)} | ${t('totalPaid')}: ${fmtMoney(bal.paid)}\n`;
+    body+=`${t('balanceDue')}: ${fmtMoney(Math.abs(bal.due))} ${bal.due===0?'(Clear)':bal.due>0?'(Due)':'(Advance)'}\n\n`;
+    txs.forEach(tx=>{ body+=`${fmtDate(tx.date)} - ${tx.type==='supply'?t('supply'):t('payment')} - ${fmtMoney(tx.amount)}\n`; });
+    if(navigator.share){ navigator.share({title:s.name+' Hisaab',text:body}).catch(()=>{}); }
+    else{ const w=window.open('','_blank'); w.document.write('<pre style="font-size:16px;font-family:sans-serif;">'+escapeHtml(body)+'</pre>'); }
+  }
+
+  // ── MISC ──────────────────────────────────────────────────────
   function goHome(){ renderHome(); }
-  function toggleLang(){ LANG = LANG==='bn' ? 'en' : 'bn'; render(); }
+  function toggleLang(){ LANG=LANG==='bn'?'en':'bn'; render(); }
 
-  function escapeHtml(s){
-    return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-  function escapeAttr(s){ return escapeHtml(s); }
-
-  window.__app = {
-    goHome, goSupplierList, supplierPhoneLogin, viewSupplier, printStatement,
-    goStaffGate, checkPin, goStaffHome, showAddSupplier, saveSupplier,
-    showAddTxPickSupplier, showAddTxForm, setTxType, recalc, saveTx, toggleLang,
-    showSupplierAddForm, showSupplierTxForm, supplierRecalc, saveSupplierTx, goReviewQueue, approveTx, rejectTx,
-    regenCode
+  // ── EXPOSE ────────────────────────────────────────────────────
+  window.A={
+    goHome, toggleLang,
+    goSupplierGate, supplierLogin,
+    goPinGate, checkPin,
+    goStaffHome, goAdminHome,
+    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, saveTx,
+    showEditForm, deleteTx,
+    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
+    printStatement
   };
 
   loadData().then(render);
