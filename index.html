@@ -1,243 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>SSRM Rice Client Ledger</title>
+</head>
+<body style="margin:0;padding:0;">
 <div id="app-root" style="
-  --brand:#1a6e3c; --brand-dark:#0f4d28; --accent:#d97706; --bg:#f7f5f0;
-  --card:#ffffff; --text:#1f2937; --muted:#6b7280; --danger:#dc2626; --ok:#16a34a;
-  --admin:#5b21b6;
-  font-family: 'Noto Sans', 'Hind Siliguri', Arial, sans-serif;
-  background:var(--bg); min-height:100vh; padding:0; box-sizing:border-box;
-">
+  --brand:#1a3a6e; --accent:#d97706; --bg:#f0f4fa;
+  --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+  --danger:#dc2626; --warn:#f59e0b; --ok:#16a34a; --admin:#5b21b6;
+  font-family:'Noto Sans','Hind Siliguri',Arial,sans-serif;
+  background:var(--bg);min-height:100vh;padding:0;box-sizing:border-box;">
 <style>
   #app-root *{box-sizing:border-box;}
   .scr{display:none;padding:16px;max-width:520px;margin:0 auto;}
   .scr.active{display:block;}
   .topbar{background:var(--brand);color:#fff;padding:18px 16px;text-align:center;
-    position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+    position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
   .topbar h1{margin:0;font-size:20px;font-weight:700;}
-  .topbar p{margin:4px 0 0;font-size:13px;opacity:.9;}
-  .lang-toggle{position:absolute;right:14px;top:18px;background:rgba(255,255,255,0.2);
-    border:1px solid rgba(255,255,255,0.5);color:#fff;padding:6px 10px;border-radius:8px;
+  .topbar p{margin:4px 0 0;font-size:13px;opacity:.85;}
+  .lang-btn{position:absolute;right:14px;top:18px;background:rgba(255,255,255,0.2);
+    border:1px solid rgba(255,255,255,0.4);color:#fff;padding:6px 10px;border-radius:8px;
     font-size:12px;cursor:pointer;}
   .topbar{position:relative;}
-  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;
-    box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid #eee;}
-  .big-btn{display:block;width:100%;padding:18px;font-size:18px;font-weight:700;
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;
+    box-shadow:0 1px 5px rgba(0,0,0,0.08);border:1px solid #e5e7eb;}
+  .big-btn{display:block;width:100%;padding:17px;font-size:17px;font-weight:700;
     border-radius:14px;border:none;margin-bottom:12px;cursor:pointer;color:#fff;
     box-shadow:0 2px 5px rgba(0,0,0,0.12);}
-  .btn-green{background:var(--brand);}
+  .btn-blue{background:var(--brand);}
   .btn-orange{background:var(--accent);}
   .btn-grey{background:#6b7280;}
   .btn-red{background:var(--danger);}
   .btn-purple{background:var(--admin);}
-  .btn-blue{background:#1e40af;}
-  .btn-sm{padding:9px 14px;font-size:13px;border-radius:10px;border:none;color:#fff;cursor:pointer;font-weight:600;}
-  input,select{width:100%;padding:13px;font-size:17px;border-radius:10px;
+  .btn-green{background:var(--ok);}
+  .btn-sm{padding:8px 13px;font-size:13px;border-radius:9px;border:none;color:#fff;cursor:pointer;font-weight:600;}
+  input,select{width:100%;padding:13px;font-size:16px;border-radius:10px;
     border:1.5px solid #d1d5db;margin-bottom:12px;background:#fff;}
-  label{font-size:14px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;}
-  .row{display:flex;gap:10px;}
-  .row>div{flex:1;}
-  .back-link{display:inline-block;margin-bottom:14px;color:var(--brand);font-weight:700;
-    font-size:15px;cursor:pointer;}
-  .supplier-item{display:flex;justify-content:space-between;align-items:center;
-    padding:14px;background:#fff;border-radius:12px;margin-bottom:10px;border:1px solid #eee;
-    cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
-  .supplier-item:active{background:#f0f0f0;}
-  .sname{font-size:17px;font-weight:700;color:var(--text);}
-  .sphone{font-size:13px;color:var(--muted);}
-  .sbal{font-size:16px;font-weight:800;}
-  .bal-due{color:var(--danger);}
-  .bal-clear{color:var(--ok);}
+  label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;}
+  .row{display:flex;gap:10px;}.row>div{flex:1;}
+  .back{display:inline-block;margin-bottom:14px;color:var(--brand);font-weight:700;font-size:15px;cursor:pointer;}
+  .client-item{display:flex;justify-content:space-between;align-items:center;
+    padding:14px;background:#fff;border-radius:12px;margin-bottom:10px;
+    border:1px solid #e5e7eb;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+  .cname{font-size:17px;font-weight:700;}.cphone{font-size:13px;color:var(--muted);}
+  .cbal{font-size:14px;font-weight:800;text-align:right;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{background:var(--brand);color:#fff;padding:9px 5px;text-align:left;font-size:11px;}
   td{padding:9px 5px;border-bottom:1px solid #eee;vertical-align:top;}
   tr:last-child td{border-bottom:none;}
   .tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;}
-  .tag-supply{background:#dcfce7;color:#166534;}
-  .tag-payment{background:#dbeafe;color:#1e40af;}
+  .tag-sale{background:#dbeafe;color:#1e40af;}
+  .tag-pay{background:#dcfce7;color:#166534;}
   .tag-edited{background:#fef3c7;color:#92400e;}
-  .summary-box{display:flex;gap:10px;margin-bottom:14px;}
-  .summary-box .card{flex:1;text-align:center;padding:14px;}
-  .summary-box .num{font-size:20px;font-weight:800;}
-  .summary-box .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
-  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:15px;}
-  .loader{text-align:center;padding:40px;color:var(--muted);}
+  .alert-red{background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;}
+  .alert-orange{background:#fffbeb;border:2px solid #fcd34d;border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;}
+  .alert-green{background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;}
+  .sumbox{display:flex;gap:10px;margin-bottom:14px;}
+  .sumbox .card{flex:1;text-align:center;padding:12px;}
+  .sumbox .num{font-size:19px;font-weight:800;}
+  .sumbox .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+  .empty{text-align:center;color:var(--muted);padding:30px;font-size:15px;}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;
     z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.2);max-width:90%;text-align:center;}
   .audit-trail{font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;}
-  .mode-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;
-    font-weight:700;margin-bottom:12px;}
+  .days-badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:700;margin-top:4px;}
 </style>
 
 <div id="root-inner">
-  <div class="loader">Loading hisaab khata... / হিসাব খাতা লোড হচ্ছে...</div>
+  <div style="text-align:center;padding:40px;color:var(--muted);">Loading...</div>
 </div>
 
 <script>
 (function(){
-  const FIREBASE_URL = 'https://m-hisaab-default-rtdb.asia-southeast1.firebasedatabase.app';
-  const DB_PATH = '/mill-hisaab-data.json';
+  const FB = 'https://m-hisaab-default-rtdb.asia-southeast1.firebasedatabase.app';
+  const DB = '/ssrm-rice-clients.json';
+  const STAFF_PIN = '1947';
+  const ADMIN_PIN = '2580';
+  const RICE_TYPES = ['Muri','Bhaat','Broken','Rejection','Tush','Bran','Chhai','Others'];
 
-  // THREE PINS — change these before going live
-  const STAFF_PIN  = '1947';   // can only ADD new entries
-  const ADMIN_PIN  = '2580';   // YOU — can edit/delete with audit trail
-
-  let DATA = { suppliers:[], transactions:[] };
+  let DATA = {clients:[], transactions:[]};
   let LANG = 'bn';
-  let currentSupplierId = null;
-  let currentMode = 'supplier'; // 'supplier' | 'staff' | 'admin'
-  let varietyRows = []; // holds multi-variety state for supply form
+  let MODE = 'client'; // client | staff | admin
+  let currentClientId = null;
 
-  // ── TRANSLATIONS ──────────────────────────────────────────────
+  // ── TRANSLATIONS ─────────────────────────────────────────────
   const T = {
     en:{
-      appTitle:"SSRM Hisaab Khata", appSub:"Supplier Account Book",
-      supplierMode:"📒 Check My Hisaab", staffMode:"✍️ Staff: Add Entry", adminMode:"🔑 Admin",
-      back:"← Back", save:"Save", cancel:"Cancel",
-      enterPin:"Enter PIN", wrongPin:"Wrong PIN, try again", unlock:"Unlock",
-      staffPinHint:"Staff PIN — for adding entries only",
-      adminPinHint:"Admin PIN — for editing & deleting entries",
-      enterYourPhone:"Your Phone Number", enterCode:"Your Secret Code",
-      codeHint:"4-digit code given by office", viewMyHisaab:"View My Hisaab",
-      wrongCode:"Wrong number or code. Contact office.",
-      addSupplier:"+ Add New Supplier", supplierName:"Supplier Name", supplierPhone:"Phone Number",
-      yourCode:"Secret Code", codeForSupplier:"Give this code privately to the supplier",
-      regenCode:"Generate New Code",
-      addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
-      whatToAdd:"What to add?",
-      date:"Date", qty:"Gross Qty (Quintal)", rate:"Base Rate (₹/Quintal)", amount:"Net Amount (₹)",
-      note:"Note (optional)",
-      vehicleNo:"Vehicle No. (Truck/Tractor)", variety:"Paddy Variety",
-      moistureCut:"Moisture Cut (%)", qualityCut:"Quality Cut (₹/Quintal)",
-      netQty:"Net Qty after moisture cut", effectiveRate:"Effective Rate after quality cut",
-      grossAmt:"Gross Amount", deductions:"Deductions", netAmt:"Net Amount Payable",
-      varietySwarna:"Swarna", varietyCM:"CM", varietyGatra:"Gatra", varietyRatna:"Ratna", varietyOther:"Other",
-      cutBreakdown:"Cut Breakdown",
-      paymentMode:"Payment Mode", cash:"Cash", bankTransfer:"Bank Transfer", cheque:"Cheque", upi:"UPI",
-      addVariety:"+ Add Another Variety", removeVariety:"Remove", varietyRows:"Variety / Quantity Details",
-      bags:"Bags (optional)", bagsHint:"1 bag = 50 kg = 0.5 Q",
-      totalGross:"Total Gross", totalNet:"Total Net Qty", totalPayable:"Total Net Payable",
-      totalSupplied:"Total Supplied", totalPaid:"Total Paid", balanceDue:"Balance Due (We Owe)",
-      balanceAdv:"Advance Paid", clear:"All Clear ✓",
-      history:"Transaction History", noTx:"No transactions yet", noSuppliers:"No suppliers added yet",
-      qtyCol:"Qty", rateCol:"Rate", amtCol:"₹", balCol:"Bal",
-      printSlip:"🖨 Share Statement", lang:"বাংলা",
-      welcomeSupplier:"Enter your phone number and secret code to see your hisaab.",
-      staffWelcome:"Staff mode — you can add new entries only. To correct an entry, call the admin.",
-      adminWelcome:"Admin mode — you can add, edit, and delete entries. All changes are logged.",
-      editEntry:"Edit Entry", deleteEntry:"Delete Entry",
-      confirmDelete:"Delete this entry? This cannot be undone.",
-      editedTag:"Edited", entryAdded:"Entry saved",
-      editSaved:"Entry updated", deleted:"Entry deleted",
-      originalVal:"Original", editedBy:"Edited by admin on",
-      deletedBy:"Deleted by admin on",
-      noSupplierPhone:"Please add a phone number to this supplier before sharing the code.",
+      appTitle:'SSRM Rice Sales Ledger', appSub:'Client Account Book',
+      clientMode:'📦 Check My Account', staffMode:'✍️ Staff: Add Entry', adminMode:'🔑 Admin',
+      back:'← Back', save:'Save',
+      staffPinHint:'Staff PIN — add entries only', adminPinHint:'Admin PIN — edit, delete, manage clients',
+      enterPhone:'Your Phone Number', enterCode:'Your Secret Code',
+      codeHint:'4-digit code from office', viewMyAcc:'View My Account', wrongCode:'Wrong number or code. Contact office.',
+      allClients:'All Clients', noClients:'No clients added yet', noTx:'No transactions yet',
+      addClient:'+ Add New Client', clientName:'Client Name', phone:'Phone',
+      paymentDays:'Credit Period (days)', interestRate:'Interest Rate (% per month, 0 if none)',
+      yourCode:'Secret Code', codeForClient:'Give this code privately to the client', regenCode:'New Code',
+      addTx:'+ Add New Entry', sale:'Rice Sale', paymentRec:'Payment Received', whatToAdd:'What to add?',
+      date:'Date', riceType:'Rice Type', qty:'Quantity (Quintal — Billed)', kataWt:'Kata Weight (Actual Weighed Q)',
+      rate:'Rate (₹/Quintal)', amount:'Amount (₹)', note:'Note (optional)',
+      paymentMode:'Payment Mode', cash:'Cash', bankTransfer:'Bank Transfer', cheque:'Cheque', upi:'UPI',
+      totalSold:'Total Sold', totalReceived:'Total Received', balDue:'Balance Due',
+      clear:'All Clear ✓', history:'Transaction History',
+      qtyCol:'Qty', rateCol:'Rate', amtCol:'₹', balCol:'Bal',
+      daysDue:'Days Outstanding', dueOn:'Due by', overdue:'OVERDUE',
+      alertOverdue:'⚠️ Payment Overdue! Interest applicable from day', alertWarn:'🕐 Payment due in',
+      alertDays:'days', alertClear:'✓ Within credit period',
+      interestNote:'Interest @', perMonth:'% per month',
+      editEntry:'Edit', deleteEntry:'Delete', confirmDelete:'Delete this entry?',
+      editedTag:'Edited', editSaved:'Entry updated', entryAdded:'Entry saved', deleted:'Deleted',
+      originalVal:'Original', editedBy:'Edited on',
+      printSlip:'🖨 Share Statement', lang:'বাংলা',
+      staffWelcome:'Staff mode — add sales and payments. Cannot edit existing entries.',
+      adminWelcome:'Admin mode — full access with audit trail on all changes.',
+      clientWelcome:'Enter your phone number and secret code to view your account.',
     },
     bn:{
-      appTitle:"SSRM হিসাব খাতা", appSub:"সাপ্লায়ার একাউন্ট বুক",
-      supplierMode:"📒 আমার হিসাব দেখুন", staffMode:"✍️ স্টাফ: এন্ট্রি যোগ করুন", adminMode:"🔑 অ্যাডমিন",
-      back:"← ফিরে যান", save:"সেভ করুন", cancel:"বাতিল",
-      enterPin:"পিন দিন", wrongPin:"ভুল পিন, আবার চেষ্টা করুন", unlock:"আনলক করুন",
-      staffPinHint:"স্টাফ পিন — শুধু নতুন এন্ট্রি যোগ করতে পারবেন",
-      adminPinHint:"অ্যাডমিন পিন — এন্ট্রি এডিট ও ডিলিট করতে পারবেন",
-      enterYourPhone:"আপনার ফোন নম্বর", enterCode:"গোপন কোড",
-      codeHint:"অফিস থেকে পাওয়া ৪ সংখ্যার কোড", viewMyHisaab:"আমার হিসাব দেখুন",
-      wrongCode:"ভুল নম্বর বা কোড। অফিসে যোগাযোগ করুন।",
-      addSupplier:"+ নতুন সাপ্লায়ার যোগ করুন", supplierName:"সাপ্লায়ারের নাম", supplierPhone:"ফোন নম্বর",
-      yourCode:"গোপন কোড", codeForSupplier:"এই কোডটি সাপ্লায়ারকে গোপনে দিন",
-      regenCode:"নতুন কোড তৈরি করুন",
-      addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
-      whatToAdd:"কী যোগ করতে চান?",
-      date:"তারিখ", qty:"গ্রস পরিমাণ (কুইন্টাল)", rate:"বেস দর (₹/কুইন্টাল)", amount:"নেট টাকা (₹)",
-      note:"নোট (ঐচ্ছিক)",
-      vehicleNo:"গাড়ি নম্বর (ট্রাক/ট্রাক্টর)", variety:"ধানের জাত",
-      moistureCut:"আর্দ্রতা কর্তন (%)", qualityCut:"মান কর্তন (₹/কুইন্টাল)",
-      netQty:"আর্দ্রতা কাটার পর নেট পরিমাণ", effectiveRate:"মান কাটার পর কার্যকর দর",
-      grossAmt:"মোট টাকা", deductions:"কর্তন", netAmt:"নেট প্রদেয় টাকা",
-      varietySwarna:"স্বর্ণা", varietyCM:"সিএম", varietyGatra:"গাত্রা", varietyRatna:"রত্না", varietyOther:"অন্যান্য",
-      cutBreakdown:"কর্তনের বিবরণ",
-      paymentMode:"পেমেন্ট পদ্ধতি", cash:"নগদ", bankTransfer:"ব্যাংক ট্রান্সফার", cheque:"চেক", upi:"ইউপিআই",
-      addVariety:"+ আরেকটি জাত যোগ করুন", removeVariety:"সরান", varietyRows:"জাত / পরিমাণের বিবরণ",
-      bags:"বস্তা (ঐচ্ছিক)", bagsHint:"১ বস্তা = ৫০ কেজি = ০.৫ কুইন্টাল",
-      totalGross:"মোট গ্রস", totalNet:"মোট নেট পরিমাণ", totalPayable:"মোট নেট প্রদেয় টাকা",
-      totalSupplied:"মোট সাপ্লাই", totalPaid:"মোট পরিশোধ", balanceDue:"বাকি টাকা (আমাদের দিতে হবে)",
-      balanceAdv:"অগ্রিম দেওয়া হয়েছে", clear:"হিসাব ক্লিয়ার ✓",
-      history:"লেনদেনের তালিকা", noTx:"এখনও কোনো লেনদেন নেই", noSuppliers:"এখনও কোনো সাপ্লায়ার নেই",
-      qtyCol:"পরিমাণ", rateCol:"দর", amtCol:"টাকা", balCol:"ব্যালেন্স",
-      printSlip:"🖨 স্টেটমেন্ট শেয়ার করুন", lang:"English",
-      welcomeSupplier:"আপনার ফোন নম্বর ও গোপন কোড দিয়ে হিসাব দেখুন।",
-      staffWelcome:"স্টাফ মোড — শুধু নতুন এন্ট্রি যোগ করতে পারবেন। কোনো ভুল হলে অ্যাডমিনকে জানান।",
-      adminWelcome:"অ্যাডমিন মোড — এন্ট্রি যোগ, এডিট ও ডিলিট করতে পারবেন। সব পরিবর্তন রেকর্ড থাকবে।",
-      editEntry:"এন্ট্রি এডিট করুন", deleteEntry:"এন্ট্রি ডিলিট করুন",
-      confirmDelete:"এই এন্ট্রি ডিলিট করবেন? এটি আর ফিরিয়ে আনা যাবে না।",
-      editedTag:"এডিট করা হয়েছে", entryAdded:"এন্ট্রি সেভ হয়েছে",
-      editSaved:"এন্ট্রি আপডেট হয়েছে", deleted:"এন্ট্রি ডিলিট হয়েছে",
-      originalVal:"আসল মান", editedBy:"অ্যাডমিন এডিট করেছেন",
-      deletedBy:"অ্যাডমিন ডিলিট করেছেন",
-      noSupplierPhone:"কোড শেয়ার করার আগে এই সাপ্লায়ারের ফোন নম্বর যোগ করুন।",
+      appTitle:'SSRM চাল বিক্রি লেজার', appSub:'ক্লায়েন্ট একাউন্ট বুক',
+      clientMode:'📦 আমার হিসাব দেখুন', staffMode:'✍️ স্টাফ: এন্ট্রি যোগ করুন', adminMode:'🔑 অ্যাডমিন',
+      back:'← ফিরে যান', save:'সেভ করুন',
+      staffPinHint:'স্টাফ পিন — শুধু এন্ট্রি যোগ করতে পারবেন', adminPinHint:'অ্যাডমিন পিন — সম্পূর্ণ অ্যাক্সেস',
+      enterPhone:'আপনার ফোন নম্বর', enterCode:'গোপন কোড',
+      codeHint:'অফিস থেকে পাওয়া ৪ সংখ্যার কোড', viewMyAcc:'আমার হিসাব দেখুন', wrongCode:'ভুল নম্বর বা কোড। অফিসে যোগাযোগ করুন।',
+      allClients:'সব ক্লায়েন্ট', noClients:'এখনও কোনো ক্লায়েন্ট নেই', noTx:'এখনও কোনো লেনদেন নেই',
+      addClient:'+ নতুন ক্লায়েন্ট যোগ করুন', clientName:'ক্লায়েন্টের নাম', phone:'ফোন নম্বর',
+      paymentDays:'ক্রেডিট সময়সীমা (দিন)', interestRate:'সুদের হার (% প্রতি মাস, না থাকলে 0)',
+      yourCode:'গোপন কোড', codeForClient:'এই কোডটি ক্লায়েন্টকে গোপনে দিন', regenCode:'নতুন কোড',
+      addTx:'+ নতুন এন্ট্রি যোগ করুন', sale:'চাল বিক্রি', paymentRec:'পেমেন্ট পেয়েছি', whatToAdd:'কী যোগ করতে চান?',
+      date:'তারিখ', riceType:'চালের ধরন', qty:'পরিমাণ (কুইন্টাল — বিল)', kataWt:'কাটা ওজন (প্রকৃত কুইন্টাল)',
+      rate:'দর (₹/কুইন্টাল)', amount:'টাকা (₹)', note:'নোট (ঐচ্ছিক)',
+      paymentMode:'পেমেন্ট পদ্ধতি', cash:'নগদ', bankTransfer:'ব্যাংক ট্রান্সফার', cheque:'চেক', upi:'ইউপিআই',
+      totalSold:'মোট বিক্রি', totalReceived:'মোট পেয়েছি', balDue:'বাকি টাকা',
+      clear:'হিসাব ক্লিয়ার ✓', history:'লেনদেনের তালিকা',
+      qtyCol:'পরিমাণ', rateCol:'দর', amtCol:'টাকা', balCol:'ব্যালেন্স',
+      daysDue:'বকেয়া দিন', dueOn:'পেমেন্টের শেষ তারিখ', overdue:'মেয়াদ পেরিয়েছে',
+      alertOverdue:'⚠️ পেমেন্ট বাকি! সুদ শুরু হবে দিন', alertWarn:'🕐 পেমেন্টের সময় আছে মাত্র',
+      alertDays:'দিন', alertClear:'✓ ক্রেডিট সময়সীমার মধ্যে আছে',
+      interestNote:'সুদ @', perMonth:'% প্রতি মাস',
+      editEntry:'এডিট', deleteEntry:'ডিলিট', confirmDelete:'এই এন্ট্রি ডিলিট করবেন?',
+      editedTag:'এডিট হয়েছে', editSaved:'আপডেট হয়েছে', entryAdded:'এন্ট্রি সেভ হয়েছে', deleted:'ডিলিট হয়েছে',
+      originalVal:'আসল মান', editedBy:'এডিট করা হয়েছে',
+      printSlip:'🖨 স্টেটমেন্ট শেয়ার করুন', lang:'English',
+      staffWelcome:'স্টাফ মোড — বিক্রি ও পেমেন্ট যোগ করুন। পুরনো এন্ট্রি পরিবর্তন করা যাবে না।',
+      adminWelcome:'অ্যাডমিন মোড — সম্পূর্ণ অ্যাক্সেস, সব পরিবর্তনের রেকর্ড থাকবে।',
+      clientWelcome:'আপনার ফোন নম্বর ও গোপন কোড দিয়ে হিসাব দেখুন।',
     }
   };
-  function t(k){ return T[LANG][k]||k; }
+  const t = k => T[LANG][k]||k;
 
-  // ── FIREBASE ──────────────────────────────────────────────────
+  // ── FIREBASE ─────────────────────────────────────────────────
   async function loadData(){
     try{
-      const res = await fetch(FIREBASE_URL+DB_PATH);
-      const json = await res.json();
-      if(json && (json.suppliers||json.transactions)){
-        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[] };
-      }
-    }catch(e){ console.log('Fresh start',e); }
+      const r = await fetch(FB+DB);
+      const j = await r.json();
+      if(j&&(j.clients||j.transactions))
+        DATA={clients:j.clients||[],transactions:j.transactions||[]};
+    }catch(e){console.log('fresh',e);}
   }
   async function saveData(){
     try{
-      const res = await fetch(FIREBASE_URL+DB_PATH,{
-        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DATA)
-      });
-      if(!res.ok) throw new Error(res.status);
-    }catch(e){
-      showToast(LANG==='bn'?'ইন্টারনেট সমস্যা — আবার চেষ্টা করুন':'Network issue — please try again');
-    }
+      const r=await fetch(FB+DB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(DATA)});
+      if(!r.ok) throw new Error(r.status);
+    }catch(e){ toast(LANG==='bn'?'ইন্টারনেট সমস্যা':'Network error'); }
   }
 
-  // ── HELPERS ───────────────────────────────────────────────────
-  function showToast(msg){
+  // ── HELPERS ──────────────────────────────────────────────────
+  function toast(msg){
     document.querySelectorAll('.toast').forEach(x=>x.remove());
-    const d=document.createElement('div'); d.className='toast'; d.textContent=msg;
+    const d=document.createElement('div');d.className='toast';d.textContent=msg;
     document.getElementById('app-root').appendChild(d);
     setTimeout(()=>d.remove(),2500);
   }
-  function fmtMoney(n){ return '₹'+Math.round(n||0).toLocaleString('en-IN'); }
-  function fmtDate(d){
-    try{ return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
-    catch(e){ return d; }
-  }
-  function nowStr(){ return new Date().toLocaleString('en-IN'); }
-  function escapeHtml(s){
-    return (s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-  function escapeAttr(s){ return escapeHtml(s); }
-  function setScreen(html){
-    document.getElementById('screens').innerHTML=`<div class="scr active">${html}</div>`;
-  }
+  const fmtM = n=>'₹'+Math.round(n||0).toLocaleString('en-IN');
+  const fmtD = d=>{try{return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}};
+  const nowStr = ()=>new Date().toLocaleString('en-IN');
+  const esc = s=>(s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const setScr = html=>document.getElementById('screens').innerHTML=`<div class="scr active">${html}</div>`;
 
-  function supplierTx(id){
+  function clientTx(id){
     return DATA.transactions
-      .filter(tx=>tx.supplierId===id && !tx.deleted)
+      .filter(tx=>tx.clientId===id&&!tx.deleted)
       .sort((a,b)=>new Date(a.date)-new Date(b.date)||(a.ts-b.ts));
   }
-  function supplierBalance(id){
-    let supplied=0, paid=0;
-    supplierTx(id).forEach(tx=>{
-      if(tx.type==='supply') supplied+=tx.amount;
-      else paid+=tx.amount;
+
+  function clientBalance(id){
+    let sold=0,received=0;
+    clientTx(id).forEach(tx=>{
+      if(tx.type==='sale') sold+=tx.amount;
+      else received+=tx.amount;
     });
-    return {supplied, paid, due:supplied-paid};
+    return {sold,received,due:sold-received};
   }
 
-  // ── RENDER SHELL ──────────────────────────────────────────────
+  // FIFO ageing — finds oldest outstanding invoice
+  function clientAgeing(id){
+    const client=DATA.clients.find(x=>x.id===id)||{};
+    const payDays=parseInt(client.paymentDays)||7;
+    const interestRate=parseFloat(client.interestRate)||0;
+    const txs=clientTx(id);
+    const sales=txs.filter(t=>t.type==='sale');
+    const {due}=clientBalance(id);
+
+    if(due<=0) return {due,daysOut:0,payDays,interestRate,alert:'clear',oldestDate:null,dueDate:null};
+
+    // FIFO: walk through sales, apply cumulative payments, find oldest unpaid
+    let totalPaid=txs.filter(t=>t.type==='payment').reduce((s,t)=>s+t.amount,0);
+    let oldestUnpaidDate=null;
+    for(const s of sales){
+      if(totalPaid>=s.amount){ totalPaid-=s.amount; }
+      else{ oldestUnpaidDate=s.date; break; }
+    }
+
+    const today=new Date(); today.setHours(0,0,0,0);
+    const saleD=new Date(oldestUnpaidDate||sales[0]?.date||today);
+    saleD.setHours(0,0,0,0);
+    const daysOut=Math.max(0,Math.floor((today-saleD)/(86400000)));
+    const dueDate=new Date(saleD); dueDate.setDate(dueDate.getDate()+payDays);
+
+    let alert='clear';
+    if(due>0){
+      if(daysOut>=payDays) alert='red';
+      else if(daysOut>=payDays-2) alert='orange';
+      else alert='green';
+    }
+    return {due,daysOut,payDays,interestRate,alert,oldestDate:oldestUnpaidDate,dueDate};
+  }
+
+  function alertBanner(age, clientName){
+    const {due,daysOut,payDays,interestRate,alert,dueDate}=age;
+    if(due<=0||alert==='clear'){
+      return `<div class="alert-green"><b>${t('alertClear')}</b><br><span style="font-size:13px;color:var(--ok);">${t('balDue')}: ${fmtM(due)}</span></div>`;
+    }
+    if(alert==='red'){
+      const daysOver=daysOut-payDays;
+      let intHtml='';
+      if(interestRate>0){
+        const monthlyInt=parseFloat((due*interestRate/100).toFixed(2));
+        const dailyInt=parseFloat((monthlyInt/30).toFixed(2));
+        intHtml=`<div style="font-size:13px;margin-top:6px;color:var(--danger);">${t('interestNote')} ${interestRate}${t('perMonth')} = ${fmtM(dailyInt)}/day (${fmtM(monthlyInt)}/month)</div>`;
+      }
+      return `<div class="alert-red">
+        <div style="font-size:20px;font-weight:800;color:var(--danger);">${t('overdue').toUpperCase()} — Day ${daysOut}</div>
+        <div style="font-size:13px;margin-top:4px;">${t('alertOverdue')} ${payDays+1} (${daysOver} day${daysOver>1?'s':''} overdue)</div>
+        ${intHtml}
+        <div style="font-size:14px;font-weight:700;margin-top:6px;">${t('balDue')}: ${fmtM(due)}</div>
+      </div>`;
+    }
+    // orange
+    const daysLeft=payDays-daysOut;
+    return `<div class="alert-orange">
+      <div style="font-size:18px;font-weight:800;color:#92400e;">${t('alertWarn')} ${daysLeft} ${t('alertDays')}!</div>
+      <div style="font-size:13px;margin-top:4px;">${t('dueOn')}: ${fmtD(dueDate?.toISOString().slice(0,10))}</div>
+      <div style="font-size:14px;font-weight:700;margin-top:6px;">${t('balDue')}: ${fmtM(due)}</div>
+    </div>`;
+  }
+
+  function alertBadge(age){
+    const {due,daysOut,payDays,alert}=age;
+    if(due<=0) return `<div class="cbal" style="color:var(--ok);">${t('clear')}</div>`;
+    const daysLeft=payDays-daysOut;
+    if(alert==='red') return `<div class="cbal" style="color:var(--danger);">${fmtM(due)}<br><span class="days-badge" style="background:#fee2e2;color:var(--danger);">🔴 Day ${daysOut}</span></div>`;
+    if(alert==='orange') return `<div class="cbal" style="color:#92400e;">${fmtM(due)}<br><span class="days-badge" style="background:#fef3c7;color:#92400e;">🟡 ${daysLeft}d left</span></div>`;
+    return `<div class="cbal" style="color:var(--brand);">${fmtM(due)}<br><span class="days-badge" style="background:#dbeafe;color:var(--brand);">🟢 ${daysLeft}d left</span></div>`;
+  }
+
+  // ── RENDER SHELL ─────────────────────────────────────────────
   function render(){
     document.getElementById('root-inner').innerHTML=`
       <div class="topbar">
-        <button class="lang-toggle" onclick="A.toggleLang()">${t('lang')}</button>
+        <button class="lang-btn" onclick="A.toggleLang()">${t('lang')}</button>
         <h1>${t('appTitle')}</h1><p>${t('appSub')}</p>
       </div>
       <div id="screens"></div>`;
@@ -245,619 +279,499 @@
   }
 
   function renderHome(){
-    setScreen(`
-      <div style="padding-top:8px;">
-        <button class="big-btn btn-green" onclick="A.goSupplierGate()">${t('supplierMode')}</button>
-        <button class="big-btn btn-orange" onclick="A.goPinGate('staff')">${t('staffMode')}</button>
-        <button class="big-btn btn-purple" onclick="A.goPinGate('admin')">${t('adminMode')}</button>
-      </div>`);
+    setScr(`<div style="padding-top:8px;">
+      <button class="big-btn btn-blue" onclick="A.goClientGate()">${t('clientMode')}</button>
+      <button class="big-btn btn-orange" onclick="A.goPinGate('staff')">${t('staffMode')}</button>
+      <button class="big-btn btn-purple" onclick="A.goPinGate('admin')">${t('adminMode')}</button>
+    </div>`);
   }
 
-  // ── PIN GATE ──────────────────────────────────────────────────
+  // ── PIN GATE ─────────────────────────────────────────────────
   function goPinGate(role){
-    const hint = role==='admin' ? t('adminPinHint') : t('staffPinHint');
-    setScreen(`
-      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
-      <div class="card" style="text-align:center;">
-        <div style="font-size:36px;margin-bottom:8px;">${role==='admin'?'🔑':'✍️'}</div>
-        <div style="font-weight:700;font-size:16px;margin-bottom:4px;">${t('enterPin')}</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${hint}</div>
-        <input type="password" id="pinInput" inputmode="numeric" maxlength="6"
-          placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:6px;"/>
-        <button class="big-btn ${role==='admin'?'btn-purple':'btn-orange'}"
-          onclick="A.checkPin('${role}')">${t('unlock')}</button>
-      </div>`);
+    setScr(`<span class="back" onclick="A.goHome()">${t('back')}</span>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:36px;margin-bottom:8px;">${role==='admin'?'🔑':'✍️'}</div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:4px;">${t('enterCode')}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${role==='admin'?t('adminPinHint'):t('staffPinHint')}</div>
+      <input type="password" id="pinIn" inputmode="numeric" maxlength="6"
+        placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:6px;"/>
+      <button class="big-btn ${role==='admin'?'btn-purple':'btn-orange'}"
+        onclick="A.checkPin('${role}')">${t('save')}</button>
+    </div>`);
   }
   function checkPin(role){
-    const v = document.getElementById('pinInput').value;
-    const correct = role==='admin' ? ADMIN_PIN : STAFF_PIN;
-    if(v===correct){ currentMode=role; role==='admin'?goAdminHome():goStaffHome(); }
-    else showToast(t('wrongPin'));
+    const v=document.getElementById('pinIn').value;
+    const ok=role==='admin'?ADMIN_PIN:STAFF_PIN;
+    if(v===ok){MODE=role; role==='admin'?goAdminHome():goStaffHome();}
+    else toast(LANG==='bn'?'ভুল পিন':'Wrong PIN');
   }
 
-  // ── SUPPLIER GATE (phone + secret code) ───────────────────────
-  function goSupplierGate(){
-    currentMode='supplier';
-    setScreen(`
-      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
-      <div class="card" style="text-align:center;">
-        <div style="font-size:40px;margin-bottom:8px;">🔒</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('welcomeSupplier')}</div>
-        <label style="text-align:left;">${t('enterYourPhone')}</label>
-        <input type="tel" id="supPhone" inputmode="numeric" placeholder="98XXXXXXXX"/>
-        <label style="text-align:left;">${t('enterCode')}</label>
-        <input type="password" id="supCode" inputmode="numeric" maxlength="4"
-          placeholder="••••" style="letter-spacing:4px;font-size:20px;"/>
-        <div style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">${t('codeHint')}</div>
-        <button class="big-btn btn-green" onclick="A.supplierLogin()">${t('viewMyHisaab')}</button>
-      </div>`);
+  // ── CLIENT GATE ──────────────────────────────────────────────
+  function goClientGate(){
+    MODE='client';
+    setScr(`<span class="back" onclick="A.goHome()">${t('back')}</span>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">🔒</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('clientWelcome')}</div>
+      <label style="text-align:left;">${t('enterPhone')}</label>
+      <input type="tel" id="cPhone" inputmode="numeric" placeholder="98XXXXXXXX"/>
+      <label style="text-align:left;">${t('enterCode')}</label>
+      <input type="password" id="cCode" inputmode="numeric" maxlength="4"
+        placeholder="••••" style="letter-spacing:4px;font-size:20px;text-align:center;"/>
+      <div style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">${t('codeHint')}</div>
+      <button class="big-btn btn-blue" onclick="A.clientLogin()">${t('viewMyAcc')}</button>
+    </div>`);
   }
-  async function supplierLogin(){
-    const phone = document.getElementById('supPhone').value.trim().replace(/\D/g,'');
-    const code  = document.getElementById('supCode').value.trim();
-    if(!phone||!code){ showToast(t('enterYourPhone')); return; }
-    showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
+  async function clientLogin(){
+    const phone=document.getElementById('cPhone').value.trim().replace(/\D/g,'');
+    const code=document.getElementById('cCode').value.trim();
+    if(!phone||!code){toast(t('enterPhone'));return;}
+    toast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
     await loadData();
-    const match = DATA.suppliers.find(s=>
-      (s.phone||'').replace(/\D/g,'').endsWith(phone) || phone.endsWith((s.phone||'').replace(/\D/g,''))
-      ? s.code===code : false
+    const match=DATA.clients.find(c=>
+      ((c.phone||'').replace(/\D/g,'').endsWith(phone)||phone.endsWith((c.phone||'').replace(/\D/g,'')))
+      && c.code===code
     );
-    if(!match){ showToast(t('wrongCode')); return; }
-    currentSupplierId=match.id;
+    if(!match){toast(t('wrongCode'));return;}
+    currentClientId=match.id;
     viewLedger(match.id);
   }
 
-  // ── LEDGER VIEW (shared by all modes) ─────────────────────────
+  // ── LEDGER ───────────────────────────────────────────────────
   function viewLedger(id){
-    currentSupplierId=id;
-    const s=DATA.suppliers.find(x=>x.id===id);
-    if(!s) return renderHome();
-    const txs=supplierTx(id);
-    const bal=supplierBalance(id);
-    let running=0, rows='';
+    currentClientId=id;
+    const c=DATA.clients.find(x=>x.id===id);
+    if(!c) return renderHome();
+    const txs=clientTx(id);
+    const bal=clientBalance(id);
+    const age=clientAgeing(id);
+    let running=0,rows='';
 
     if(txs.length===0){
       rows=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">${t('noTx')}</td></tr>`;
     } else {
       txs.forEach(tx=>{
-        running+=(tx.type==='supply'?tx.amount:-tx.amount);
-        const edited = tx.editLog && tx.editLog.length>0;
+        running+=(tx.type==='sale'?tx.amount:-tx.amount);
+        const edited=tx.editLog&&tx.editLog.length>0;
         let auditHtml='';
-        if(edited && currentMode==='admin'){
+        if(edited&&MODE==='admin'){
           const last=tx.editLog[tx.editLog.length-1];
-          auditHtml=`<div class="audit-trail">${t('editedBy')} ${last.on}<br>${t('originalVal')}: ${fmtMoney(last.origAmount)}</div>`;
+          auditHtml=`<div class="audit-trail">${t('editedBy')} ${last.on} | ${t('originalVal')}: ${fmtM(last.origAmount)}</div>`;
         }
-        // vehicle + variety + cut detail for supply rows
-        let supplyDetail='';
-        if(tx.type==='supply'){
-          const vehicle=tx.vehicleNo||'';
-          const mCut=tx.moistureCut||0;
-          if(vehicle) supplyDetail+=`<div style="font-size:11px;color:#374151;margin-top:3px;">🚛 ${escapeHtml(vehicle)}</div>`;
-          if(mCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">💧 Moisture: −${mCut}%</div>`;
-          // multi-variety breakdown
-          if(tx.varieties && tx.varieties.length>0){
-            tx.varieties.forEach(v=>{
-              const effRate=(v.rate||0)-(v.qualityCut||0);
-              supplyDetail+=`<div style="font-size:11px;color:#374151;margin-top:2px;">
-                🌾 <b>${escapeHtml(v.variety)}</b>: ${v.grossQty}Q
-                ${v.qualityCut>0?`<span style="color:var(--danger);">−₹${v.qualityCut}/Q</span>`:''}
-                → ${fmtMoney(v.lineAmount)}</div>`;
-            });
-          } else {
-            // legacy single-variety display
-            const variety=tx.variety||'';
-            const qCut=tx.qualityCut||0;
-            if(variety) supplyDetail+=`<div style="font-size:11px;color:#374151;">🌾 ${escapeHtml(variety)}</div>`;
-            if(qCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">✂️ Quality: −${fmtMoney(qCut)}/Q</div>`;
-          }
+        let detail='';
+        if(tx.type==='sale'){
+          if(tx.riceType) detail+=`<div style="font-size:11px;color:#374151;">🌾 ${esc(tx.riceType)}</div>`;
+          if(tx.kataWt&&tx.kataWt!==tx.qty) detail+=`<div style="font-size:11px;color:var(--muted);">Kata: ${tx.kataWt} Q (billed: ${tx.qty} Q)</div>`;
         }
-        // payment mode badge
-        let paymentDetail='';
-        if(tx.type==='payment' && tx.paymentMode){
-          const modeEmoji={cash:'💵',bankTransfer:'🏦',cheque:'📄',upi:'📱'};
-          paymentDetail=`<div style="font-size:11px;color:#1e40af;margin-top:3px;">${modeEmoji[tx.paymentMode]||'💵'} ${t(tx.paymentMode)||tx.paymentMode}</div>`;
+        if(tx.type==='payment'&&tx.paymentMode){
+          const em={cash:'💵',bankTransfer:'🏦',cheque:'📄',upi:'📱'};
+          detail+=`<div style="font-size:11px;color:#166534;">${em[tx.paymentMode]||'💵'} ${t(tx.paymentMode)||tx.paymentMode}</div>`;
         }
-        const adminBtns = currentMode==='admin' ? `
+        const adminBtns=MODE==='admin'?`
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button class="btn-sm btn-purple" onclick='A.showEditForm("${id}","${tx.id}")'>${t('editEntry')}</button>
             <button class="btn-sm btn-red" onclick='A.deleteTx("${id}","${tx.id}")'>${t('deleteEntry')}</button>
-          </div>` : '';
-        const grossQtyDisplay = tx.type==='supply' ? (tx.grossQty||tx.qty||0)+' Q' : '-';
+          </div>`:'';
         rows+=`<tr>
-          <td>${fmtDate(tx.date)}<br>
-            <span class="tag ${tx.type==='supply'?'tag-supply':'tag-payment'}">${tx.type==='supply'?t('supply'):t('payment')}</span>
+          <td>${fmtD(tx.date)}<br>
+            <span class="tag ${tx.type==='sale'?'tag-sale':'tag-pay'}">${tx.type==='sale'?t('sale'):t('paymentRec')}</span>
             ${edited?`<span class="tag tag-edited">${t('editedTag')}</span>`:''}
-            ${supplyDetail}${paymentDetail}${auditHtml}${adminBtns}
+            ${detail}${auditHtml}${adminBtns}
           </td>
-          <td>${grossQtyDisplay}</td>
-          <td>${tx.type==='supply'?fmtMoney(tx.rate):'-'}</td>
-          <td>${fmtMoney(tx.amount)}</td>
-          <td style="font-weight:700;">${fmtMoney(running)}</td>
+          <td>${tx.type==='sale'?(tx.kataWt||tx.qty||0)+' Q':'-'}</td>
+          <td>${tx.type==='sale'?fmtM(tx.rate):'-'}</td>
+          <td>${fmtM(tx.amount)}</td>
+          <td style="font-weight:700;">${fmtM(running)}</td>
         </tr>`;
       });
     }
 
-    const backFn = currentMode==='admin'?'A.goAdminHome()':currentMode==='staff'?'A.goStaffHome()':'A.goSupplierGate()';
-    const addBtn = (currentMode==='staff'||currentMode==='admin')
-      ? `<button class="big-btn btn-orange" onclick="A.showAddTxForm('${id}')">${t('addTransaction')}</button>` : '';
-    const codeBadge = currentMode==='admin'
-      ? `<div class="card" style="text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${t('yourCode')}</div>
-          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:var(--admin);">${s.code||'----'}</div>
-          <button class="btn-sm btn-purple" style="margin-top:8px;" onclick="A.regenCode('${id}')">${t('regenCode')}</button>
-        </div>` : '';
-    const modeBadge = currentMode==='admin'
-      ? `<span class="mode-badge" style="background:#ede9fe;color:var(--admin);">🔑 Admin</span>`
-      : currentMode==='staff'
-      ? `<span class="mode-badge" style="background:#fff7ed;color:#92400e;">✍️ Staff</span>` : '';
+    const backFn=MODE==='admin'?'A.goAdminHome()':MODE==='staff'?'A.goStaffHome()':'A.goClientGate()';
+    const addBtn=(MODE==='staff'||MODE==='admin')
+      ?`<button class="big-btn btn-orange" onclick="A.showAddTxForm('${id}')">${t('addTx')}</button>`:'';
+    const codeBadge=MODE==='admin'?`<div class="card" style="text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;">
+      <div style="font-size:13px;color:var(--muted);">${t('yourCode')}</div>
+      <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:var(--admin);">${c.code||'----'}</div>
+      <div style="font-size:12px;color:var(--muted);">Credit: ${c.paymentDays}d | Interest: ${c.interestRate||0}%/mo</div>
+      <button class="btn-sm btn-purple" style="margin-top:8px;" onclick="A.regenCode('${id}')">${t('regenCode')}</button>
+      <button class="btn-sm btn-grey" style="margin-top:8px;margin-left:6px;" onclick="A.editClientSettings('${id}')">⚙️ Settings</button>
+    </div>`:'';
+    const modeBadge=MODE==='admin'?`<span style="background:#ede9fe;color:var(--admin);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:12px;">🔑 Admin</span>`:
+      MODE==='staff'?`<span style="background:#fff7ed;color:#92400e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:12px;">✍️ Staff</span>`:'';
 
-    setScreen(`
-      <span class="back-link" onclick="${backFn}">${t('back')}</span>
-      ${modeBadge}
-      <div class="card">
-        <div class="sname" style="font-size:19px;">${escapeHtml(s.name)}</div>
-        <div class="sphone">${escapeHtml(s.phone||'')}</div>
-      </div>
-      <div class="summary-box">
-        <div class="card"><div class="num" style="color:var(--brand);">${fmtMoney(bal.supplied)}</div><div class="lbl">${t('totalSupplied')}</div></div>
-        <div class="card"><div class="num" style="color:#1e40af;">${fmtMoney(bal.paid)}</div><div class="lbl">${t('totalPaid')}</div></div>
-      </div>
-      <div class="card" style="text-align:center;background:${bal.due>0?'#fef2f2':bal.due<0?'#eff6ff':'#f0fdf4'};">
-        <div class="num" style="font-size:24px;color:${bal.due>0?'var(--danger)':bal.due<0?'#1e40af':'var(--ok)'};">${fmtMoney(Math.abs(bal.due))}</div>
-        <div class="lbl">${bal.due===0?t('clear'):bal.due>0?t('balanceDue'):t('balanceAdv')}</div>
-      </div>
-      ${codeBadge}
-      ${addBtn}
-      <div class="card" style="overflow-x:auto;">
-        <div style="font-weight:700;margin-bottom:8px;">${t('history')}</div>
-        <table>
-          <thead><tr><th>${t('date')}</th><th>${t('qtyCol')}</th><th>${t('rateCol')}</th><th>${t('amtCol')}</th><th>${t('balCol')}</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>`);
+    setScr(`<span class="back" onclick="${backFn}">${t('back')}</span>
+    ${modeBadge}
+    <div class="card"><div class="cname" style="font-size:19px;">${esc(c.name)}</div><div class="cphone">${esc(c.phone||'')}</div></div>
+    ${alertBanner(age)}
+    <div class="sumbox">
+      <div class="card"><div class="num" style="color:var(--brand);">${fmtM(bal.sold)}</div><div class="lbl">${t('totalSold')}</div></div>
+      <div class="card"><div class="num" style="color:var(--ok);">${fmtM(bal.received)}</div><div class="lbl">${t('totalReceived')}</div></div>
+    </div>
+    ${codeBadge}
+    ${addBtn}
+    <div class="card" style="overflow-x:auto;">
+      <div style="font-weight:700;margin-bottom:8px;">${t('history')}</div>
+      <table>
+        <thead><tr><th>${t('date')}</th><th>${t('qtyCol')}</th><th>${t('rateCol')}</th><th>${t('amtCol')}</th><th>${t('balCol')}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>`);
   }
 
-  // ── ADD ENTRY (staff + admin) ─────────────────────────────────
-  function showAddTxForm(sid){
-    const today=new Date().toISOString().slice(0,10);
-    const backFn=`A.viewLedger('${sid}')`;
-    setScreen(`
-      <span class="back-link" onclick="${backFn}">${t('back')}</span>
-      <div class="card">
-        <div style="font-weight:700;margin-bottom:12px;">${t('whatToAdd')}</div>
-        <button class="big-btn btn-green" onclick="A.showTxTypeForm('${sid}','supply')">📦 ${t('supply')}</button>
-        <button class="big-btn btn-blue" onclick="A.showTxTypeForm('${sid}','payment')">💵 ${t('payment')}</button>
-      </div>`);
+  // ── ADD ENTRY FORM ───────────────────────────────────────────
+  function showAddTxForm(cid){
+    const backFn=`A.viewLedger('${cid}')`;
+    setScr(`<span class="back" onclick="${backFn}">${t('back')}</span>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px;">${t('whatToAdd')}</div>
+      <button class="big-btn btn-blue" onclick="A.showTxTypeForm('${cid}','sale')">📦 ${t('sale')}</button>
+      <button class="big-btn btn-green" onclick="A.showTxTypeForm('${cid}','payment')">💵 ${t('paymentRec')}</button>
+    </div>`);
   }
-  function showTxTypeForm(sid, type, editId){
+
+  function showTxTypeForm(cid, type, editId){
     const today=new Date().toISOString().slice(0,10);
-    const existing = editId ? DATA.transactions.find(x=>x.id===editId) : null;
-    const e=existing||{};
+    const e=editId?DATA.transactions.find(x=>x.id===editId)||{}:{};
     const isEdit=!!editId;
-    const backFn=isEdit?`A.viewLedger('${sid}')`:`A.showAddTxForm('${sid}')`;
-    const title=isEdit?t('editEntry'):(type==='supply'?`📦 ${t('supply')}`:`💵 ${t('payment')}`);
-    const btnColor=isEdit?'btn-purple':(type==='supply'?'btn-green':'btn-blue');
+    const backFn=isEdit?`A.viewLedger('${cid}')`:`A.showAddTxForm('${cid}')`;
+    const btnColor=isEdit?'btn-purple':type==='sale'?'btn-blue':'btn-green';
+    const title=isEdit?t('editEntry'):type==='sale'?`📦 ${t('sale')}`:`💵 ${t('paymentRec')}`;
 
-    const varieties=['Swarna','CM','Gatra','Ratna','Other'];
-    const varOptions=varieties.map(v=>`<option value="${v}" ${(e.variety||'Swarna')===v?'selected':''}>${v}</option>`).join('');
-
-    const supplyFields = type==='supply' ? `
-      <label>${t('vehicleNo')}</label>
-      <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}" placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
-      <label>${t('variety')}</label>
-      <select id="fVariety" onchange="A.onVarietyChange()">${varOptions}</select>
-      <div class="row">
-        <div><label>${t('qty')}</label><input type="number" id="fQty" value="${e.grossQty||e.qty||''}" placeholder="0" oninput="A.calcAmt()"/></div>
-        <div><label>${t('rate')}</label><input type="number" id="fRate" value="${e.rate||''}" placeholder="₹/Q" oninput="A.calcAmt()"/></div>
-      </div>
-      <div class="row">
-        <div><label>${t('moistureCut')}</label><input type="number" id="fMoisture" value="${e.moistureCut||0}" placeholder="0" oninput="A.calcAmt()" min="0" max="20" step="0.5"/></div>
-        <div><label>${t('qualityCut')}</label><input type="number" id="fQualityCut" value="${e.qualityCut||0}" placeholder="₹0" oninput="A.calcAmt()"/></div>
-      </div>
-      <div class="card" id="calcBreakdown" style="background:#f8fffe;border:1px solid #d1fae5;padding:12px;font-size:14px;display:none;">
-        <div style="font-weight:700;margin-bottom:6px;color:var(--brand);">📊 ${t('cutBreakdown')}</div>
-        <div id="breakdownLines"></div>
-        <div style="border-top:1px solid #d1fae5;margin-top:8px;padding-top:8px;font-weight:800;font-size:16px;color:var(--brand);" id="netAmtDisplay"></div>
-      </div>
-      <input type="hidden" id="fAmt"/>` : `
-      <label>${t('amount')}</label>
-      <input type="number" id="fAmt" value="${e.amount||''}"/>`;
-
-    setScreen(`
-      <span class="back-link" onclick="${backFn}">${t('back')}</span>
-      <div class="card">
-        <div style="font-weight:700;margin-bottom:10px;">${title}</div>
-        <label>${t('date')}</label>
-        <input type="date" id="fDate" value="${e.date||today}"/>
-        ${supplyFields}
-        <label>${t('note')}</label>
-        <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
-        <button class="big-btn ${btnColor}"
-          onclick="A.saveTx('${sid}','${type}','${editId||''}')">${t('save')}</button>
-      </div>`);
-
-    // trigger initial calculation if editing
-    if(type==='supply') A.calcAmt();
-  }
-
-  // Default quality cuts per variety (₹/quintal) — adjust to your rates
-  const VARIETY_CUTS = { 'Swarna':0, 'CM':0, 'Gatra':0, 'Ratna':0, 'Other':0 };
-  const VARIETIES = ['Swarna','CM','Gatra','Ratna','Other'];
-
-  function showTxTypeForm(sid, type, editId){
-    const today=new Date().toISOString().slice(0,10);
-    const existing = editId ? DATA.transactions.find(x=>x.id===editId) : null;
-    const e=existing||{};
-    const isEdit=!!editId;
-    const backFn=isEdit?`A.viewLedger('${sid}')`:`A.showAddTxForm('${sid}')`;
-    const title=isEdit?t('editEntry'):(type==='supply'?`📦 ${t('supply')}`:`💵 ${t('payment')}`);
-    const btnColor=isEdit?'btn-purple':(type==='supply'?'btn-green':'btn-blue');
-
-    if(type==='supply'){
-      // initialise variety rows from existing data or default
-      varietyRows = (e.varieties && e.varieties.length>0)
-        ? e.varieties.map(v=>({...v}))
-        : [{ variety:'Swarna', bags:'', qty:'', rate:'', qualityCut:0 }];
-
-      setScreen(`
-        <span class="back-link" onclick="${backFn}">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700;margin-bottom:12px;">${title}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="fDate" value="${e.date||today}"/>
-          <label>${t('vehicleNo')}</label>
-          <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}"
-            placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
-          <label>${t('moistureCut')} <span style="font-weight:400;color:var(--muted);font-size:12px;">(applies to all varieties)</span></label>
-          <input type="number" id="fMoisture" value="${e.moistureCut||0}" min="0" max="20" step="0.5" oninput="A.refreshAllCalcs()"/>
-          <div style="font-weight:600;color:var(--muted);font-size:13px;margin:8px 0 6px;">${t('varietyRows')}</div>
-          <div id="varietyRowsContainer"></div>
-          <button class="big-btn btn-grey" style="padding:12px;font-size:15px;margin-bottom:14px;" onclick="A.addVarietyRow()">+ ${t('addVariety')}</button>
-          <div id="supplyBreakdown"></div>
-          <label>${t('note')}</label>
-          <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
-          <button class="big-btn ${btnColor}" onclick="A.saveTx('${sid}','supply','${editId||''}')">${t('save')}</button>
-        </div>`);
-      renderVarietyRows();
-
+    let fields='';
+    if(type==='sale'){
+      const rtOpts=RICE_TYPES.map(r=>`<option value="${r}" ${(e.riceType||'Muri')===r?'selected':''}>${r}</option>`).join('');
+      fields=`
+        <label>${t('riceType')}</label><select id="fRiceType">${rtOpts}</select>
+        <div class="row">
+          <div><label>${t('qty')}</label><input type="number" id="fQty" value="${e.qty||''}" placeholder="0 Q"/></div>
+          <div><label>${t('kataWt')}</label><input type="number" id="fKata" value="${e.kataWt||''}" placeholder="0 Q" oninput="A.calcSaleAmt()"/></div>
+        </div>
+        <label>${t('rate')}</label>
+        <input type="number" id="fRate" value="${e.rate||''}" placeholder="₹/Q" oninput="A.calcSaleAmt()"/>
+        <label>${t('amount')} <span style="font-size:11px;font-weight:400;color:var(--muted);">(kata weight × rate)</span></label>
+        <input type="number" id="fAmt" value="${e.amount||''}" readonly style="background:#f3f4f6;font-weight:700;font-size:18px;"/>`;
     } else {
-      // PAYMENT FORM with payment mode
-      const modeOpts=['cash','bankTransfer','cheque','upi']
+      const mOpts=['cash','bankTransfer','cheque','upi']
         .map(m=>`<option value="${m}" ${(e.paymentMode||'cash')===m?'selected':''}>${t(m)}</option>`).join('');
-      setScreen(`
-        <span class="back-link" onclick="${backFn}">${t('back')}</span>
-        <div class="card">
-          <div style="font-weight:700;margin-bottom:10px;">${title}</div>
-          <label>${t('date')}</label>
-          <input type="date" id="fDate" value="${e.date||today}"/>
-          <label>${t('paymentMode')}</label>
-          <select id="fPayMode">${modeOpts}</select>
-          <label>${t('amount')}</label>
-          <input type="number" id="fAmt" value="${e.amount||''}" placeholder="₹"/>
-          <label>${t('note')}</label>
-          <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
-          <button class="big-btn ${btnColor}" onclick="A.saveTx('${sid}','payment','${editId||''}')">${t('save')}</button>
-        </div>`);
+      fields=`
+        <label>${t('paymentMode')}</label><select id="fPayMode">${mOpts}</select>
+        <label>${t('amount')}</label>
+        <input type="number" id="fAmt" value="${e.amount||''}" placeholder="₹"/>`;
     }
+
+    setScr(`<span class="back" onclick="${backFn}">${t('back')}</span>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px;">${title}</div>
+      <label>${t('date')}</label>
+      <input type="date" id="fDate" value="${e.date||today}"/>
+      ${fields}
+      <label>${t('note')}</label>
+      <input type="text" id="fNote" value="${esc(e.note||'')}"/>
+      <button class="big-btn ${btnColor}" onclick="A.saveTx('${cid}','${type}','${editId||''}')">${t('save')}</button>
+    </div>`);
   }
 
-  function renderVarietyRows(){
-    // Full rebuild — only on structural changes (add/remove row, variety dropdown)
-    const moisture=parseFloat(document.getElementById('fMoisture')?.value)||0;
-    const container=document.getElementById('varietyRowsContainer');
-    if(!container) return;
-    let html='';
-    varietyRows.forEach((row,i)=>{
-      const varOpts=VARIETIES.map(v=>`<option value="${v}" ${row.variety===v?'selected':''}>${v}</option>`).join('');
-      const removeBtn=varietyRows.length>1
-        ?`<button onclick="A.removeVarietyRow(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;margin-top:4px;">✕ ${t('removeVariety')}</button>`:'';
-      html+=`<div style="background:#f8fffe;border:1px solid #d1fae5;border-radius:12px;padding:12px;margin-bottom:10px;">
-        <div class="row" style="margin-bottom:0;">
-          <div style="flex:2;">
-            <label style="font-size:12px;">${t('variety')}</label>
-            <select onchange="A.onVarietyRowChange(${i},this.value)">${varOpts}</select>
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label style="font-size:12px;">${t('bags')} <span style="font-weight:400;font-size:10px;">${t('bagsHint')}</span></label>
-            <input type="number" id="vBags_${i}" value="${row.bags||''}" placeholder="0 bags"
-              oninput="A.onBagsInput(${i},this.value)" style="margin-bottom:6px;"/>
-          </div>
-          <div>
-            <label style="font-size:12px;">${t('qty')} (Q)</label>
-            <input type="number" id="vQty_${i}" value="${row.qty||''}" placeholder="0 Q"
-              oninput="A.onRowInput(${i},'qty',this.value)"/>
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label style="font-size:12px;">${t('rate')} (₹/Q)</label>
-            <input type="number" id="vRate_${i}" value="${row.rate||''}" placeholder="₹"
-              oninput="A.onRowInput(${i},'rate',this.value)"/>
-          </div>
-          <div>
-            <label style="font-size:12px;">${t('qualityCut')} (₹/Q)</label>
-            <input type="number" id="vQcut_${i}" value="${row.qualityCut||0}" placeholder="₹0"
-              oninput="A.onRowInput(${i},'qualityCut',this.value)"/>
-          </div>
-        </div>
-        <div id="lineAmt_${i}" style="font-size:12px;color:var(--brand);background:#ecfdf5;padding:6px 8px;border-radius:8px;display:none;"></div>
-        ${removeBtn}
-      </div>`;
-    });
-    container.innerHTML=html;
-    refreshAllCalcs();
+  function calcSaleAmt(){
+    const kata=parseFloat(document.getElementById('fKata')?.value)||0;
+    const rate=parseFloat(document.getElementById('fRate')?.value)||0;
+    const el=document.getElementById('fAmt');
+    if(el) el.value=kata&&rate?parseFloat((kata*rate).toFixed(2)):'';
   }
 
-  function refreshAllCalcs(){
-    // Only updates calc display divs — never touches input fields
-    const moisture=parseFloat(document.getElementById('fMoisture')?.value)||0;
-    varietyRows.forEach((_,i)=>refreshCalc(i,moisture));
-    updateSupplyBreakdown(moisture);
-  }
-
-  function refreshCalc(i,moisture){
-    const grossQty=parseFloat(varietyRows[i]?.qty)||0;
-    const rate=parseFloat(varietyRows[i]?.rate)||0;
-    const qualityCut=parseFloat(varietyRows[i]?.qualityCut)||0;
-    const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
-    const effRate=rate-qualityCut;
-    const lineAmt=parseFloat((netQty*effRate).toFixed(2));
-    const el=document.getElementById('lineAmt_'+i);
-    if(!el) return;
-    if(grossQty>0&&rate>0){
-      el.style.display='block';
-      el.innerHTML=netQty+' Q × '+fmtMoney(effRate)+' = <b>'+fmtMoney(lineAmt)+'</b>'
-        +(moisture>0?' <span style="color:var(--danger);font-size:11px;">(after '+moisture+'% moisture)</span>':'');
-    } else { el.style.display='none'; }
-  }
-
-  function updateSupplyBreakdown(moisture){
-    const bd=document.getElementById('supplyBreakdown');
-    if(!bd) return;
-    let totalGross=0,totalNet=0,totalAmt=0;
-    varietyRows.forEach(row=>{
-      const g=parseFloat(row.qty)||0;
-      const n=parseFloat((g*(1-moisture/100)).toFixed(2));
-      const eff=(parseFloat(row.rate)||0)-(parseFloat(row.qualityCut)||0);
-      totalGross+=g; totalNet=parseFloat((totalNet+n).toFixed(2)); totalAmt+=n*eff;
-    });
-    if(totalGross>0){
-      bd.innerHTML='<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;text-align:center;margin-bottom:12px;"><div style="font-size:13px;color:var(--muted);">'+t('totalGross')+': '+totalGross.toFixed(2)+' Q &nbsp;|&nbsp; '+t('totalNet')+': '+totalNet.toFixed(2)+' Q</div><div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:4px;">✅ '+t('totalPayable')+': '+fmtMoney(totalAmt)+'</div></div>';
-    } else { bd.innerHTML=''; }
-  }
-
-  function onVarietyRowChange(i,val){
-    varietyRows[i].variety=val;
-    varietyRows[i].qualityCut=VARIETY_CUTS[val]||0;
-    renderVarietyRows();
-  }
-  function onBagsInput(i,val){
-    varietyRows[i].bags=val;
-    const qty=parseFloat((parseFloat(val)||0)*0.5).toFixed(2);
-    varietyRows[i].qty=qty>0?qty:'';
-    const qtyEl=document.getElementById('vQty_'+i);
-    if(qtyEl) qtyEl.value=varietyRows[i].qty;
-    refreshAllCalcs();
-  }
-  function onRowInput(i,field,val){
-    varietyRows[i][field]=val;
-    refreshAllCalcs();
-  }
-  function addVarietyRow(){
-    varietyRows.push({variety:'Swarna',bags:'',qty:'',rate:varietyRows[0]?.rate||'',qualityCut:0});
-    renderVarietyRows();
-  }
-  function removeVarietyRow(i){
-    varietyRows.splice(i,1);
-    renderVarietyRows();
-  }
-  function onVarietyChange(){} // legacy no-op
-  function calcAmt(){} // legacy no-op
-  async function saveTx(sid, type, editId){
+  async function saveTx(cid, type, editId){
     const date=document.getElementById('fDate').value;
+    const amount=parseFloat(document.getElementById('fAmt').value)||0;
     const note=document.getElementById('fNote').value.trim();
-    if(!date){ showToast(LANG==='bn'?'তারিখ দিন':'Enter date'); return; }
-
-    let txData={};
-
-    if(type==='supply'){
-      const moisture=parseFloat(document.getElementById('fMoisture').value)||0;
-      const vehicleNo=(document.getElementById('fVehicle').value||'').trim().toUpperCase();
-      // build variety rows from state
-      const varieties=varietyRows.map(row=>{
-        const grossQty=parseFloat(row.qty)||0;
-        const rate=parseFloat(row.rate)||0;
-        const qualityCut=parseFloat(row.qualityCut)||0;
-        const netQty=parseFloat((grossQty*(1-moisture/100)).toFixed(2));
-        const effRate=rate-qualityCut;
-        const lineAmount=parseFloat((netQty*effRate).toFixed(2));
-        return { variety:row.variety, bags:parseFloat(row.bags)||0, grossQty, netQty, rate, qualityCut, lineAmount };
-      });
-      const validRows=varieties.filter(v=>v.grossQty>0&&v.rate>0);
-      if(validRows.length===0){ showToast(LANG==='bn'?'অন্তত একটি জাতের পরিমাণ ও দর দিন':'Enter qty and rate for at least one variety'); return; }
-      const totalGross=parseFloat(validRows.reduce((s,v)=>s+v.grossQty,0).toFixed(2));
-      const totalNet=parseFloat(validRows.reduce((s,v)=>s+v.netQty,0).toFixed(2));
-      const totalAmount=parseFloat(validRows.reduce((s,v)=>s+v.lineAmount,0).toFixed(2));
-      txData={ vehicleNo, moistureCut:moisture, varieties:validRows,
-        grossQty:totalGross, netQty:totalNet, amount:totalAmount,
-        // legacy fields for backward compat
-        qty:totalGross, rate:validRows[0]?.rate||0, variety:validRows.map(v=>v.variety).join('+') };
+    if(!date||amount<=0){toast(LANG==='bn'?'সব ঘর পূরণ করুন':'Fill all fields');return;}
+    let extra={};
+    if(type==='sale'){
+      extra={riceType:document.getElementById('fRiceType').value,
+        qty:parseFloat(document.getElementById('fQty').value)||0,
+        kataWt:parseFloat(document.getElementById('fKata').value)||0,
+        rate:parseFloat(document.getElementById('fRate').value)||0};
     } else {
-      const amount=parseFloat(document.getElementById('fAmt').value)||0;
-      const paymentMode=document.getElementById('fPayMode').value;
-      if(amount<=0){ showToast(LANG==='bn'?'টাকার পরিমাণ দিন':'Enter amount'); return; }
-      txData={ amount, paymentMode };
+      extra={paymentMode:document.getElementById('fPayMode').value};
     }
-
     if(editId){
       const tx=DATA.transactions.find(x=>x.id===editId);
       if(!tx) return;
       if(!tx.editLog) tx.editLog=[];
-      tx.editLog.push({ on:nowStr(), origAmount:tx.amount, origQty:tx.grossQty||tx.qty, origRate:tx.rate, origDate:tx.date, origNote:tx.note });
-      Object.assign(tx, { date, note, ...txData });
-      await saveData();
-      showToast(t('editSaved'));
+      tx.editLog.push({on:nowStr(),origAmount:tx.amount});
+      Object.assign(tx,{date,amount,note,...extra});
+      await saveData(); toast(t('editSaved'));
     } else {
-      const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, note,
-        ts:Date.now(), addedBy:currentMode, editLog:[], ...txData };
-      DATA.transactions.push(tx);
-      await saveData();
-      showToast(t('entryAdded'));
+      DATA.transactions.push({id:'t_'+Date.now(),clientId:cid,type,date,amount,note,
+        ts:Date.now(),addedBy:MODE,editLog:[],...extra});
+      await saveData(); toast(t('entryAdded'));
     }
-    viewLedger(sid);
+    viewLedger(cid);
   }
 
-  // ── ADMIN EDIT / DELETE ────────────────────────────────────────
-  function showEditForm(sid, txId){
+  function showEditForm(cid,txId){
     const tx=DATA.transactions.find(x=>x.id===txId);
-    if(!tx) return;
-    showTxTypeForm(sid, tx.type, txId);
+    if(tx) showTxTypeForm(cid,tx.type,txId);
   }
-  async function deleteTx(sid, txId){
+  async function deleteTx(cid,txId){
     if(!confirm(t('confirmDelete'))) return;
     const tx=DATA.transactions.find(x=>x.id===txId);
-    if(!tx) return;
-    // soft-delete: keep record but mark deleted with audit info
-    tx.deleted=true;
-    tx.deletedOn=nowStr();
-    await saveData();
-    showToast(t('deleted'));
-    viewLedger(sid);
+    if(tx){tx.deleted=true;tx.deletedOn=nowStr();}
+    await saveData(); toast(t('deleted')); viewLedger(cid);
   }
 
-  // ── STAFF HOME ────────────────────────────────────────────────
+  // ── PAYMENT SUMMARY DASHBOARD ────────────────────────────────
+  function goPaymentSummary(){
+    // Build prioritised call list
+    const items = DATA.clients.map(c=>{
+      const age = clientAgeing(c.id);
+      return {...c, age};
+    }).filter(c=>c.age.due>0);
+
+    // Sort: red (most overdue first) → orange → green
+    const alertOrder = {red:0, orange:1, green:2, clear:3};
+    items.sort((a,b)=>{
+      const ao=alertOrder[a.age.alert]??3, bo=alertOrder[b.age.alert]??3;
+      if(ao!==bo) return ao-bo;
+      // within same alert level: most overdue / fewest days left first
+      return b.age.daysOut - a.age.daysOut;
+    });
+
+    const totalDue = items.reduce((s,c)=>s+c.age.due,0);
+    const redCount = items.filter(c=>c.age.alert==='red').length;
+    const orangeCount = items.filter(c=>c.age.alert==='orange').length;
+
+    let cards='';
+    if(items.length===0){
+      cards=`<div class="empty">✅ ${LANG==='bn'?'কোনো বকেয়া পেমেন্ট নেই':'No outstanding payments'}</div>`;
+    } else {
+      items.forEach(c=>{
+        const {due,daysOut,payDays,alert,interestRate}=c.age;
+        const daysOver=daysOut-payDays;
+        const daysLeft=payDays-daysOut;
+
+        let borderColor='#86efac', bgColor='#f0fdf4', labelHtml='', labelColor='var(--ok)';
+        if(alert==='red'){
+          borderColor='#fca5a5'; bgColor='#fef2f2'; labelColor='var(--danger)';
+          labelHtml=`<span style="background:#fee2e2;color:var(--danger);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;">🔴 OVERDUE ${daysOver>0?`+${daysOver}d`:''}</span>`;
+        } else if(alert==='orange'){
+          borderColor='#fcd34d'; bgColor='#fffbeb'; labelColor='#92400e';
+          labelHtml=`<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;">🟡 Due in ${daysLeft}d</span>`;
+        } else {
+          labelHtml=`<span style="background:#dcfce7;color:var(--ok);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;">🟢 ${daysLeft}d left</span>`;
+        }
+
+        let interestHtml='';
+        if(alert==='red'&&interestRate>0){
+          const daily=parseFloat((due*interestRate/100/30).toFixed(2));
+          interestHtml=`<div style="font-size:12px;color:var(--danger);margin-top:4px;">📈 Interest running: ${fmtM(daily)}/day</div>`;
+        }
+
+        const phoneHtml=c.phone
+          ?`<a href="tel:${c.phone}" style="display:inline-flex;align-items:center;gap:6px;background:var(--brand);color:#fff;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">📞 Call ${esc(c.phone)}</a>`
+          :`<span style="font-size:12px;color:var(--muted);">No phone on record</span>`;
+
+        cards+=`<div style="border:2px solid ${borderColor};background:${bgColor};border-radius:14px;padding:14px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <div style="font-size:17px;font-weight:800;color:var(--text);">${esc(c.name)}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">Day ${daysOut} of ${payDays}d credit</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:20px;font-weight:800;color:${labelColor};">${fmtM(due)}</div>
+              ${labelHtml}
+            </div>
+          </div>
+          ${interestHtml}
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            ${phoneHtml}
+            <button onclick="A.viewLedger('${c.id}')" style="background:#e5e7eb;color:#374151;border:none;padding:9px 14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">📋 Ledger</button>
+          </div>
+        </div>`;
+      });
+    }
+
+    const backFn=MODE==='admin'?'A.goAdminHome()':'A.goStaffHome()';
+    setScr(`<span class="back" onclick="${backFn}">${t('back')}</span>
+    <div style="font-weight:800;font-size:18px;margin-bottom:12px;">📋 ${LANG==='bn'?'পেমেন্ট ফলো-আপ লিস্ট':'Payment Follow-up List'}</div>
+    <div class="sumbox" style="margin-bottom:14px;">
+      <div class="card"><div class="num" style="color:var(--danger);">${redCount}</div><div class="lbl">${LANG==='bn'?'মেয়াদোত্তীর্ণ':'Overdue'}</div></div>
+      <div class="card"><div class="num" style="color:#92400e;">${orangeCount}</div><div class="lbl">${LANG==='bn'?'শীঘ্রই দেয়':'Due Soon'}</div></div>
+      <div class="card"><div class="num" style="color:var(--brand);">${fmtM(totalDue)}</div><div class="lbl">${LANG==='bn'?'মোট বকেয়া':'Total Due'}</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">
+      ${LANG==='bn'?'সবচেয়ে জরুরি থেকে সাজানো — ফোন বাটনে ট্যাপ করে সরাসরি কল করুন।':'Sorted by urgency — tap Call to dial directly.'}
+    </div>
+    ${cards}`);
+  }
+
+  // ── STAFF HOME ───────────────────────────────────────────────
   async function goStaffHome(){
-    currentMode='staff';
-    await loadData();
-    let list='';
-    if(DATA.suppliers.length===0){
-      list=`<div class="empty">${t('noSuppliers')}</div>`;
-    } else {
-      DATA.suppliers.forEach(s=>{
-        const bal=supplierBalance(s.id);
-        list+=`<div class="supplier-item" onclick="A.viewLedger('${s.id}')">
-          <div><div class="sname">${escapeHtml(s.name)}</div><div class="sphone">${escapeHtml(s.phone||'')}</div></div>
-          <div class="sbal ${bal.due>0?'bal-due':'bal-clear'}">${bal.due===0?t('clear'):fmtMoney(Math.abs(bal.due))}</div>
-        </div>`;
-      });
-    }
-    setScreen(`
-      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
-      <div class="card" style="background:#fff7ed;border:1px solid #fde6c8;">
-        <div style="font-size:13px;color:#92400e;">✍️ ${t('staffWelcome')}</div>
-      </div>
-      <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
-      ${list}`);
+    MODE='staff'; await loadData();
+    const redCount=DATA.clients.filter(c=>clientAgeing(c.id).alert==='red').length;
+    const orangeCount=DATA.clients.filter(c=>clientAgeing(c.id).alert==='orange').length;
+    const alertBtn=(redCount+orangeCount)>0
+      ?`<button class="big-btn btn-red" onclick="A.goPaymentSummary()">📋 Payment Follow-up List &nbsp;<span style="background:rgba(255,255,255,0.3);padding:2px 10px;border-radius:20px;">${redCount} overdue · ${orangeCount} due soon</span></button>`
+      :`<button class="big-btn btn-grey" onclick="A.goPaymentSummary()">📋 Payment Follow-up List &nbsp;<span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;">All clear</span></button>`;
+    setScr(`<span class="back" onclick="A.goHome()">${t('back')}</span>
+    <div class="card" style="background:#fff7ed;border:1px solid #fde6c8;">
+      <div style="font-size:13px;color:#92400e;">✍️ ${t('staffWelcome')}</div>
+    </div>
+    ${alertBtn}
+    ${searchBarHtml()}
+    ${clientListHtml()}`);
   }
 
-  // ── ADMIN HOME ────────────────────────────────────────────────
+  // ── ADMIN HOME ───────────────────────────────────────────────
   async function goAdminHome(){
-    currentMode='admin';
-    await loadData();
-    let list='';
-    if(DATA.suppliers.length===0){
-      list=`<div class="empty">${t('noSuppliers')}</div>`;
-    } else {
-      DATA.suppliers.forEach(s=>{
-        const bal=supplierBalance(s.id);
-        list+=`<div class="supplier-item" onclick="A.viewLedger('${s.id}')">
-          <div><div class="sname">${escapeHtml(s.name)}</div><div class="sphone">${escapeHtml(s.phone||'')}</div></div>
-          <div class="sbal ${bal.due>0?'bal-due':'bal-clear'}">${bal.due===0?t('clear'):fmtMoney(Math.abs(bal.due))}</div>
-        </div>`;
-      });
-    }
-    setScreen(`
-      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
-      <div class="card" style="background:#f5f3ff;border:1px solid #ddd6fe;">
-        <div style="font-size:13px;color:var(--admin);">🔑 ${t('adminWelcome')}</div>
-      </div>
-      <button class="big-btn btn-purple" onclick="A.showAddSupplier()">${t('addSupplier')}</button>
-      <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
-      ${list}`);
+    MODE='admin'; await loadData();
+    const redCount=DATA.clients.filter(c=>clientAgeing(c.id).alert==='red').length;
+    const orangeCount=DATA.clients.filter(c=>clientAgeing(c.id).alert==='orange').length;
+    const alertBtn=(redCount+orangeCount)>0
+      ?`<button class="big-btn btn-red" onclick="A.goPaymentSummary()">📋 Payment Follow-up List &nbsp;<span style="background:rgba(255,255,255,0.3);padding:2px 10px;border-radius:20px;">${redCount} overdue · ${orangeCount} due soon</span></button>`
+      :`<button class="big-btn btn-grey" onclick="A.goPaymentSummary()">📋 Payment Follow-up List &nbsp;<span style="background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:20px;">All clear</span></button>`;
+    setScr(`<span class="back" onclick="A.goHome()">${t('back')}</span>
+    <div class="card" style="background:#f5f3ff;border:1px solid #ddd6fe;">
+      <div style="font-size:13px;color:var(--admin);">🔑 ${t('adminWelcome')}</div>
+    </div>
+    ${alertBtn}
+    <button class="big-btn btn-purple" onclick="A.showAddClient()">${t('addClient')}</button>
+    ${searchBarHtml()}
+    ${clientListHtml()}`);
   }
 
-  // ── ADD SUPPLIER (admin only) ─────────────────────────────────
-  function showAddSupplier(){
-    setScreen(`
-      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
-      <div class="card">
-        <label>${t('supplierName')}</label>
-        <input type="text" id="newName" placeholder="${t('supplierName')}"/>
-        <label>${t('supplierPhone')}</label>
-        <input type="tel" id="newPhone" placeholder="98XXXXXXXX" inputmode="numeric"/>
-        <button class="big-btn btn-purple" onclick="A.saveSupplier()">${t('save')}</button>
-      </div>`);
+  function clientListHtml(filter){
+    filter=(filter||'').toLowerCase();
+    const clients=DATA.clients.filter(c=>
+      c.name.toLowerCase().includes(filter)||(c.phone||'').includes(filter)
+    );
+    if(DATA.clients.length===0) return `<div id="clientList"><div class="empty">${t('noClients')}</div></div>`;
+    if(clients.length===0) return `<div id="clientList"><div class="empty">${LANG==='bn'?'কোনো ফলাফল নেই':'No results found'}</div></div>`;
+    return `<div id="clientList">`+clients.map(c=>{
+      const age=clientAgeing(c.id);
+      return `<div class="client-item" onclick="A.viewLedger('${c.id}')">
+        <div>
+          <div class="cname">${esc(c.name)}</div>
+          <div class="cphone">${esc(c.phone||'')} · ${c.paymentDays}d credit</div>
+        </div>
+        ${alertBadge(age)}
+      </div>`;
+    }).join('')+`</div>`;
   }
-  async function saveSupplier(){
-    const name=document.getElementById('newName').value.trim();
-    const phone=document.getElementById('newPhone').value.trim();
-    if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
-    const code=String(Math.floor(1000+Math.random()*9000));
-    const id='s_'+Date.now();
-    DATA.suppliers.push({id,name,phone,code});
-    await saveData();
-    showSupplierCodeScreen(id);
+
+  function filterClients(val){
+    const container=document.getElementById('clientList');
+    if(!container) return;
+    const filter=(val||'').toLowerCase();
+    const clients=DATA.clients.filter(c=>
+      c.name.toLowerCase().includes(filter)||(c.phone||'').includes(filter)
+    );
+    if(clients.length===0){
+      container.innerHTML=`<div class="empty">${LANG==='bn'?'কোনো ফলাফল নেই':'No results found'}</div>`;
+      return;
+    }
+    container.innerHTML=clients.map(c=>{
+      const age=clientAgeing(c.id);
+      return `<div class="client-item" onclick="A.viewLedger('${c.id}')">
+        <div>
+          <div class="cname">${esc(c.name)}</div>
+          <div class="cphone">${esc(c.phone||'')} · ${c.paymentDays}d credit</div>
+        </div>
+        ${alertBadge(age)}
+      </div>`;
+    }).join('');
   }
-  function showSupplierCodeScreen(id){
-    const s=DATA.suppliers.find(x=>x.id===id);
-    setScreen(`
-      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
-      <div class="card" style="text-align:center;">
-        <div style="font-weight:700;font-size:17px;margin-bottom:6px;">✅ ${escapeHtml(s.name)}</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${t('codeForSupplier')}</div>
-        <div style="font-size:44px;font-weight:800;letter-spacing:10px;color:var(--admin);margin:16px 0;">${s.code}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">📱 ${s.phone||''}</div>
-        <button class="big-btn btn-purple" onclick="A.goAdminHome()">${t('save')}</button>
-      </div>`);
+
+  function searchBarHtml(){
+    return `<input type="text" placeholder="${LANG==='bn'?'নাম বা ফোন দিয়ে খুঁজুন...':'Search by name or phone...'}"
+      oninput="A.filterClients(this.value)"
+      style="margin-bottom:10px;background:#fff;border:1.5px solid #d1d5db;"
+      autocomplete="off"/>`;
+  }
+
+  // ── ADD / EDIT CLIENT ────────────────────────────────────────
+  function showAddClient(editId){
+    const e=editId?DATA.clients.find(x=>x.id===editId)||{}:{};
+    const isEdit=!!editId;
+    const backFn=isEdit?`A.viewLedger('${editId}')`:MODE==='admin'?'A.goAdminHome()':'A.goStaffHome()';
+    setScr(`<span class="back" onclick="${backFn}">${t('back')}</span>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px;">${t('addClient')}</div>
+      <label>${t('clientName')}</label><input type="text" id="nName" value="${esc(e.name||'')}"/>
+      <label>${t('phone')}</label><input type="tel" id="nPhone" value="${esc(e.phone||'')}" inputmode="numeric"/>
+      <div class="row">
+        <div><label>${t('paymentDays')}</label><input type="number" id="nDays" value="${e.paymentDays||7}" min="1"/></div>
+        <div><label>${t('interestRate')}</label><input type="number" id="nInt" value="${e.interestRate||0}" min="0" step="0.5"/></div>
+      </div>
+      <button class="big-btn btn-purple" onclick="A.saveClient('${editId||''}')">${t('save')}</button>
+    </div>`);
+  }
+  async function saveClient(editId){
+    const name=document.getElementById('nName').value.trim();
+    const phone=document.getElementById('nPhone').value.trim();
+    const paymentDays=parseInt(document.getElementById('nDays').value)||7;
+    const interestRate=parseFloat(document.getElementById('nInt').value)||0;
+    if(!name){toast(LANG==='bn'?'নাম দিন':'Enter name');return;}
+    if(editId){
+      const c=DATA.clients.find(x=>x.id===editId);
+      if(c) Object.assign(c,{name,phone,paymentDays,interestRate});
+      await saveData(); toast(LANG==='bn'?'আপডেট হয়েছে':'Updated');
+      viewLedger(editId);
+    } else {
+      const code=String(Math.floor(1000+Math.random()*9000));
+      const id='c_'+Date.now();
+      DATA.clients.push({id,name,phone,paymentDays,interestRate,code});
+      await saveData();
+      showClientCodeScreen(id);
+    }
+  }
+  function editClientSettings(id){ showAddClient(id); }
+
+  function showClientCodeScreen(id){
+    const c=DATA.clients.find(x=>x.id===id);
+    setScr(`<span class="back" onclick="A.goAdminHome()">${t('back')}</span>
+    <div class="card" style="text-align:center;">
+      <div style="font-weight:700;font-size:17px;margin-bottom:6px;">✅ ${esc(c.name)}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${t('codeForClient')}</div>
+      <div style="font-size:44px;font-weight:800;letter-spacing:10px;color:var(--admin);margin:16px 0;">${c.code}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📱 ${c.phone||''} &nbsp;|&nbsp; ⏱ ${c.paymentDays}d credit</div>
+      <button class="big-btn btn-purple" onclick="A.goAdminHome()">${t('save')}</button>
+    </div>`);
   }
   async function regenCode(id){
-    const s=DATA.suppliers.find(x=>x.id===id);
-    if(!s) return;
-    s.code=String(Math.floor(1000+Math.random()*9000));
-    await saveData();
-    showToast(LANG==='bn'?'নতুন কোড তৈরি হয়েছে':'New code generated');
+    const c=DATA.clients.find(x=>x.id===id);
+    if(c){c.code=String(Math.floor(1000+Math.random()*9000));await saveData();}
+    toast(LANG==='bn'?'নতুন কোড তৈরি হয়েছে':'New code generated');
     viewLedger(id);
   }
 
-  // ── PRINT / SHARE ─────────────────────────────────────────────
+  // ── PRINT ────────────────────────────────────────────────────
   function printStatement(id){
-    const s=DATA.suppliers.find(x=>x.id===id);
-    const bal=supplierBalance(id);
-    const txs=supplierTx(id);
-    let body=`${s.name} (${s.phone||''})\n`;
-    body+=`${t('totalSupplied')}: ${fmtMoney(bal.supplied)} | ${t('totalPaid')}: ${fmtMoney(bal.paid)}\n`;
-    body+=`${t('balanceDue')}: ${fmtMoney(Math.abs(bal.due))} ${bal.due===0?'(Clear)':bal.due>0?'(Due)':'(Advance)'}\n\n`;
+    const c=DATA.clients.find(x=>x.id===id);
+    const bal=clientBalance(id);
+    const age=clientAgeing(id);
+    const txs=clientTx(id);
+    let body=`${c.name} (${c.phone||''})\n`;
+    body+=`${t('totalSold')}: ${fmtM(bal.sold)} | ${t('totalReceived')}: ${fmtM(bal.received)}\n`;
+    body+=`${t('balDue')}: ${fmtM(bal.due)}\n`;
+    if(age.due>0) body+=`Days Outstanding: ${age.daysOut} / ${age.payDays}d credit\n`;
+    body+=`\n`;
     txs.forEach(tx=>{
-      if(tx.type==='supply'){
-        body+=`${fmtDate(tx.date)} - ${t('supply')} - ${escapeHtml(tx.variety||'')} - 🚛${escapeHtml(tx.vehicleNo||'')} - Gross:${tx.grossQty||tx.qty||0}Q`;
-        if(tx.moistureCut>0) body+=` | Moisture:${tx.moistureCut}%`;
-        if(tx.qualityCut>0) body+=` | Quality cut:₹${tx.qualityCut}/Q`;
-        body+=` - Net: ${fmtMoney(tx.amount)}\n`;
-      } else {
-        body+=`${fmtDate(tx.date)} - ${t('payment')} - ${fmtMoney(tx.amount)}\n`;
-      }
+      if(tx.type==='sale') body+=`${fmtD(tx.date)} - Sale - ${tx.riceType||''} - ${tx.kataWt||tx.qty||0}Q @ ${fmtM(tx.rate)} = ${fmtM(tx.amount)}\n`;
+      else body+=`${fmtD(tx.date)} - Payment (${tx.paymentMode||'cash'}) - ${fmtM(tx.amount)}\n`;
     });
-    if(navigator.share){ navigator.share({title:s.name+' Hisaab',text:body}).catch(()=>{}); }
-    else{ const w=window.open('','_blank'); w.document.write('<pre style="font-size:16px;font-family:sans-serif;">'+escapeHtml(body)+'</pre>'); }
+    if(navigator.share) navigator.share({title:c.name+' Account',text:body}).catch(()=>{});
+    else{ const w=window.open('','_blank'); w.document.write('<pre style="font-size:16px;font-family:sans-serif;">'+esc(body)+'</pre>'); }
   }
 
-  // ── MISC ──────────────────────────────────────────────────────
+  // ── MISC ─────────────────────────────────────────────────────
   function goHome(){ renderHome(); }
   function toggleLang(){ LANG=LANG==='bn'?'en':'bn'; render(); }
 
-  // ── EXPOSE ────────────────────────────────────────────────────
   window.A={
-    goHome, toggleLang,
-    goSupplierGate, supplierLogin,
-    goPinGate, checkPin,
-    goStaffHome, goAdminHome,
-    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange,
-    renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
-    saveTx, showEditForm, deleteTx,
-    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
+    goHome,toggleLang,goClientGate,clientLogin,goPinGate,checkPin,
+    goStaffHome,goAdminHome,goPaymentSummary,viewLedger,showAddTxForm,showTxTypeForm,
+    calcSaleAmt,saveTx,showEditForm,deleteTx,filterClients,
+    showAddClient,saveClient,editClientSettings,showClientCodeScreen,regenCode,
     printStatement
   };
 
@@ -865,3 +779,5 @@
 })();
 </script>
 </div>
+</body>
+</html>
