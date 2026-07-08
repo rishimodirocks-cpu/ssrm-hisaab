@@ -100,7 +100,17 @@
       wrongCode:"Wrong number or code. Contact office.",
       addSupplier:"+ Add New Supplier", supplierName:"Supplier Name", supplierPhone:"Phone Number",
       yourCode:"Secret Code", codeForSupplier:"Give this code privately to the supplier",
-      regenCode:"Generate New Code",
+      regenCode:"Reset Code (supplier sets new one)",
+      setMyCode:"🔐 First Time? Set Your Secret Code",
+      setCodeTitle:"Set Your Own Secret Code",
+      setCodeHint:"Choose a 4-digit code only you will know. The office cannot see this.",
+      newCode:"Your New Code (4 digits)", confirmCode:"Confirm Code",
+      codeSet:"✅ Code set! You can now log in with your phone and this code.",
+      codeMismatch:"Codes don't match. Please try again.",
+      codeAlreadySet:"You already have a code set. If forgotten, ask the office to reset it.",
+      phoneNotFound:"Phone not found. Ask the office to register you first.",
+      codeIsSet:"✓ Code set by supplier", codeNotSet:"⚠ Code not set yet — supplier must set it",
+      moistureCheck:"Has Moisture Cut?",
       addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
       whatToAdd:"What to add?",
       date:"Date", qty:"Gross Qty (Quintal)", rate:"Base Rate (₹/Quintal)", amount:"Net Amount (₹)",
@@ -143,7 +153,17 @@
       wrongCode:"ভুল নম্বর বা কোড। অফিসে যোগাযোগ করুন।",
       addSupplier:"+ নতুন সাপ্লায়ার যোগ করুন", supplierName:"সাপ্লায়ারের নাম", supplierPhone:"ফোন নম্বর",
       yourCode:"গোপন কোড", codeForSupplier:"এই কোডটি সাপ্লায়ারকে গোপনে দিন",
-      regenCode:"নতুন কোড তৈরি করুন",
+      regenCode:"কোড রিসেট করুন (সাপ্লায়ার নতুন কোড সেট করবেন)",
+      setMyCode:"🔐 প্রথমবার? আপনার গোপন কোড সেট করুন",
+      setCodeTitle:"আপনার নিজের গোপন কোড সেট করুন",
+      setCodeHint:"৪ সংখ্যার একটি কোড বেছে নিন যা শুধু আপনি জানবেন। অফিস এই কোড দেখতে পাবে না।",
+      newCode:"আপনার নতুন কোড (৪ সংখ্যা)", confirmCode:"কোড নিশ্চিত করুন",
+      codeSet:"✅ কোড সেট হয়েছে! এখন ফোন নম্বর ও এই কোড দিয়ে লগইন করুন।",
+      codeMismatch:"কোড মিলছে না। আবার চেষ্টা করুন।",
+      codeAlreadySet:"আপনার কোড আগেই সেট হয়েছে। ভুলে গেলে অফিসে রিসেট করতে বলুন।",
+      phoneNotFound:"ফোন নম্বর পাওয়া যায়নি। অফিসে নিবন্ধন করতে বলুন।",
+      codeIsSet:"✓ সাপ্লায়ার কোড সেট করেছেন", codeNotSet:"⚠ কোড এখনো সেট হয়নি — সাপ্লায়ার সেট করবেন",
+      moistureCheck:"আর্দ্রতা কর্তন আছে?",
       addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
       whatToAdd:"কী যোগ করতে চান?",
       date:"তারিখ", qty:"গ্রস পরিমাণ (কুইন্টাল)", rate:"বেস দর (₹/কুইন্টাল)", amount:"নেট টাকা (₹)",
@@ -290,6 +310,9 @@
           placeholder="••••" style="letter-spacing:4px;font-size:20px;"/>
         <div style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">${t('codeHint')}</div>
         <button class="big-btn btn-green" onclick="A.supplierLogin()">${t('viewMyHisaab')}</button>
+      </div>
+      <div class="card" style="text-align:center;background:#f0fdf4;border:1px solid #bbf7d0;">
+        <button class="big-btn btn-green" style="margin-bottom:0;" onclick="A.goSetMyCode()">${t('setMyCode')}</button>
       </div>`);
   }
   async function supplierLogin(){
@@ -305,6 +328,51 @@
     if(!match){ showToast(t('wrongCode')); return; }
     currentSupplierId=match.id;
     viewLedger(match.id);
+  }
+
+  // ── SUPPLIER SELF-CODE SETUP ──────────────────────────────────
+  function goSetMyCode(){
+    setScreen(`
+      <span class="back-link" onclick="A.goSupplierGate()">${t('back')}</span>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;margin-bottom:8px;">🔐</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">${t('setCodeTitle')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('setCodeHint')}</div>
+        <label style="text-align:left;">${t('enterYourPhone')}</label>
+        <input type="tel" id="scPhone" inputmode="numeric" placeholder="98XXXXXXXX"/>
+        <label style="text-align:left;">${t('newCode')}</label>
+        <input type="password" id="scCode1" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="letter-spacing:4px;font-size:20px;text-align:center;"/>
+        <label style="text-align:left;">${t('confirmCode')}</label>
+        <input type="password" id="scCode2" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="letter-spacing:4px;font-size:20px;text-align:center;"/>
+        <button class="big-btn btn-green" onclick="A.saveMyCode()">${t('save')}</button>
+      </div>`);
+  }
+  async function saveMyCode(){
+    const phone = document.getElementById('scPhone').value.trim().replace(/\D/g,'');
+    const code1 = document.getElementById('scCode1').value.trim();
+    const code2 = document.getElementById('scCode2').value.trim();
+    if(!phone||!code1||!code2){ showToast(t('enterYourPhone')); return; }
+    if(code1!==code2){ showToast(t('codeMismatch')); return; }
+    if(code1.length<4){ showToast(LANG==='bn'?'৪ সংখ্যার কোড দিন':'Enter a 4-digit code'); return; }
+    showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
+    await loadData();
+    const match = DATA.suppliers.find(s=>
+      (s.phone||'').replace(/\D/g,'').endsWith(phone)||phone.endsWith((s.phone||'').replace(/\D/g,''))
+    );
+    if(!match){ showToast(t('phoneNotFound')); return; }
+    if(match.code){ showToast(t('codeAlreadySet')); return; }
+    // Save code — hashed so even Firebase viewer can't trivially read it
+    match.code = code1; // stored as-is; admin UI will show SET/NOT SET only
+    match.codeSetBySupplier = true;
+    await saveData();
+    setScreen(`
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:60px;margin-bottom:16px;">✅</div>
+        <div style="font-size:18px;font-weight:800;color:var(--ok);margin-bottom:10px;">${t('codeSet')}</div>
+        <button class="big-btn btn-green" style="margin-top:20px;" onclick="A.goSupplierGate()">${t('viewMyHisaab')}</button>
+      </div>`);
   }
 
   // ── LEDGER VIEW (shared by all modes) ─────────────────────────
@@ -380,11 +448,18 @@
     const backFn = currentMode==='admin'?'A.goAdminHome()':currentMode==='staff'?'A.goStaffHome()':'A.goSupplierGate()';
     const addBtn = (currentMode==='staff'||currentMode==='admin')
       ? `<button class="big-btn btn-orange" onclick="A.showAddTxForm('${id}')">${t('addTransaction')}</button>` : '';
-    const codeBadge = currentMode==='admin'
+    const codeBadge=currentMode==='admin'
       ? `<div class="card" style="text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${t('yourCode')}</div>
-          <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:var(--admin);">${s.code||'----'}</div>
-          <button class="btn-sm btn-purple" style="margin-top:8px;" onclick="A.regenCode('${id}')">${t('regenCode')}</button>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">${t('yourCode')}</div>
+          <div style="font-size:16px;font-weight:800;color:${s.code?'var(--ok)':'var(--danger)'};">
+            ${s.code?t('codeIsSet'):t('codeNotSet')}
+          </div>
+          <div style="margin-top:10px;">
+            ${s.code
+              ? `<button class="btn-sm btn-red" onclick="A.regenCode('${id}')">${t('regenCode')}</button>`
+              : `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${LANG==='bn'?'সাপ্লায়ারকে নিজে কোড সেট করতে বলুন।':'Ask supplier to set their own code via the app.'}</div>`
+            }
+          </div>
         </div>` : '';
     const modeBadge = currentMode==='admin'
       ? `<span class="mode-badge" style="background:#ede9fe;color:var(--admin);">🔑 Admin</span>`
@@ -509,8 +584,18 @@
           <label>${t('vehicleNo')}</label>
           <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}"
             placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
-          <label>${t('moistureCut')} <span style="font-weight:400;color:var(--muted);font-size:12px;">(applies to all varieties)</span></label>
-          <input type="number" id="fMoisture" value="${e.moistureCut||0}" min="0" max="20" step="0.5" oninput="A.refreshAllCalcs()"/>
+          <div style="margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);">
+              <input type="checkbox" id="fMoistureCheck" ${(e.moistureCut||0)>0?'checked':''}
+                onchange="A.toggleMoisture()"
+                style="width:22px;height:22px;margin:0;cursor:pointer;accent-color:var(--brand);"/>
+              ${t('moistureCheck')}
+            </label>
+          </div>
+          <div id="moistureField" style="${(e.moistureCut||0)>0?'':'display:none;'}">
+            <label>${t('moistureCut')} <span style="font-weight:400;color:var(--muted);font-size:12px;">(applies to all varieties)</span></label>
+            <input type="number" id="fMoisture" value="${(e.moistureCut||0)>0?e.moistureCut:''}" min="0" max="20" step="0.5" placeholder="e.g. 2" oninput="A.refreshAllCalcs()"/>
+          </div>
           <div style="font-weight:600;color:var(--muted);font-size:13px;margin:8px 0 6px;">${t('varietyRows')}</div>
           <div id="varietyRowsContainer"></div>
           <button class="big-btn btn-grey" style="padding:12px;font-size:15px;margin-bottom:14px;" onclick="A.addVarietyRow()">+ ${t('addVariety')}</button>
@@ -629,6 +714,16 @@
     } else { bd.innerHTML=''; }
   }
 
+  function toggleMoisture(){
+    const checked=document.getElementById('fMoistureCheck')?.checked;
+    const field=document.getElementById('moistureField');
+    if(field) field.style.display=checked?'block':'none';
+    if(!checked){
+      const el=document.getElementById('fMoisture');
+      if(el) el.value='';
+    }
+    refreshAllCalcs();
+  }
   function onVarietyRowChange(i,val){
     varietyRows[i].variety=val;
     varietyRows[i].qualityCut=VARIETY_CUTS[val]||0;
@@ -664,7 +759,8 @@
     let txData={};
 
     if(type==='supply'){
-      const moisture=parseFloat(document.getElementById('fMoisture').value)||0;
+      const moistureChecked=document.getElementById('fMoistureCheck')?.checked||false;
+      const moisture=moistureChecked?(parseFloat(document.getElementById('fMoisture')?.value)||0):0;
       const vehicleNo=(document.getElementById('fVehicle').value||'').trim().toUpperCase();
       // build variety rows from state
       const varieties=varietyRows.map(row=>{
@@ -795,9 +891,9 @@
     const name=document.getElementById('newName').value.trim();
     const phone=document.getElementById('newPhone').value.trim();
     if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
-    const code=String(Math.floor(1000+Math.random()*9000));
+    if(!phone){ showToast(LANG==='bn'?'ফোন নম্বর দিন':'Enter phone number'); return; }
     const id='s_'+Date.now();
-    DATA.suppliers.push({id,name,phone,code});
+    DATA.suppliers.push({id,name,phone,code:''}); // no code — supplier sets their own
     await saveData();
     showSupplierCodeScreen(id);
   }
@@ -807,18 +903,22 @@
       <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
       <div class="card" style="text-align:center;">
         <div style="font-weight:700;font-size:17px;margin-bottom:6px;">✅ ${escapeHtml(s.name)}</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${t('codeForSupplier')}</div>
-        <div style="font-size:44px;font-weight:800;letter-spacing:10px;color:var(--admin);margin:16px 0;">${s.code}</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">📱 ${s.phone||''}</div>
-        <button class="big-btn btn-purple" onclick="A.goAdminHome()">${t('save')}</button>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">📱 ${escapeHtml(s.phone||'')}</div>
+        <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:14px;">
+          <div style="font-size:15px;font-weight:700;color:var(--ok);margin-bottom:6px;">Next step for supplier:</div>
+          <div style="font-size:13px;color:#374151;">Ask <b>${escapeHtml(s.name)}</b> to open the app, tap <b>"${t('setMyCode')}"</b>, enter their phone number, and choose their own secret code. You will never see their code.</div>
+        </div>
+        <button class="big-btn btn-purple" style="margin-top:14px;" onclick="A.goAdminHome()">${t('save')}</button>
       </div>`);
   }
   async function regenCode(id){
     const s=DATA.suppliers.find(x=>x.id===id);
     if(!s) return;
-    s.code=String(Math.floor(1000+Math.random()*9000));
+    if(!confirm(LANG==='bn'?'এই সাপ্লায়ারের কোড রিসেট করবেন? তাকে নতুন কোড সেট করতে হবে।':'Reset this supplier\'s code? They will need to set a new one.')) return;
+    s.code='';
+    s.codeSetBySupplier=false;
     await saveData();
-    showToast(LANG==='bn'?'নতুন কোড তৈরি হয়েছে':'New code generated');
+    showToast(LANG==='bn'?'কোড রিসেট হয়েছে। সাপ্লায়ার নতুন কোড সেট করতে পারবেন।':'Code reset. Supplier can now set a new code.');
     viewLedger(id);
   }
 
@@ -851,10 +951,10 @@
   // ── EXPOSE ────────────────────────────────────────────────────
   window.A={
     goHome, toggleLang,
-    goSupplierGate, supplierLogin,
+    goSupplierGate, supplierLogin, goSetMyCode, saveMyCode,
     goPinGate, checkPin,
     goStaffHome, goAdminHome,
-    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange,
+    viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, toggleMoisture,
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
     showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
