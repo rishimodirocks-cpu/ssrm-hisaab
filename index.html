@@ -76,15 +76,15 @@
   const FIREBASE_URL = 'https://m-hisaab-default-rtdb.asia-southeast1.firebasedatabase.app';
   const DB_PATH = '/mill-hisaab-data.json';
 
-  // THREE PINS — change these before going live
-  const STAFF_PIN  = '1947';   // can only ADD new entries
-  const ADMIN_PIN  = '2580';   // YOU — can edit/delete with audit trail
+  // ADMIN PIN — only you. Staff set their own PINs individually.
+  const ADMIN_PIN  = '2580';
 
-  let DATA = { suppliers:[], transactions:[] };
+  let DATA = { suppliers:[], transactions:[], staff:[] };
   let LANG = 'bn';
   let currentSupplierId = null;
   let currentMode = 'supplier'; // 'supplier' | 'staff' | 'admin'
   let varietyRows = []; // holds multi-variety state for supply form
+  let currentStaffId = null; // tracks which staff member is logged in
 
   // ── TRANSLATIONS ──────────────────────────────────────────────
   const T = {
@@ -111,6 +111,15 @@
       phoneNotFound:"Phone not found. Ask the office to register you first.",
       codeIsSet:"✓ Code set by supplier", codeNotSet:"⚠ Code not set yet — supplier must set it",
       moistureCheck:"Has Moisture Cut?",
+      manageStaff:"👥 Manage Staff", addStaff:"+ Add Staff Member", staffName:"Staff Name",
+      staffList:"Staff Members", noStaff:"No staff added yet",
+      whoAreYou:"Who are you?", selectYourself:"Select your name to log in",
+      setStaffCode:"Set Your Secret PIN", staffCodeHint:"Choose a 4-digit PIN only you know. Admin cannot see this.",
+      staffCodeSet:"✅ PIN set! You can now log in.", staffCodeAlreadySet:"PIN already set. Ask admin to reset if forgotten.",
+      resetStaffCode:"Reset PIN (staff will set a new one)",
+      staffCodeIsSet:"✓ PIN set by staff", staffCodeNotSet:"⚠ PIN not set — staff must set it",
+      loggedInAs:"Logged in as", enteredBy:"Entered by",
+      exportCSV:"📥 Export All Data (CSV / Excel)", exporting:"Preparing export...",
       addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
       whatToAdd:"What to add?",
       date:"Date", qty:"Gross Qty (Quintal)", rate:"Base Rate (₹/Quintal)", amount:"Net Amount (₹)",
@@ -164,6 +173,15 @@
       phoneNotFound:"ফোন নম্বর পাওয়া যায়নি। অফিসে নিবন্ধন করতে বলুন।",
       codeIsSet:"✓ সাপ্লায়ার কোড সেট করেছেন", codeNotSet:"⚠ কোড এখনো সেট হয়নি — সাপ্লায়ার সেট করবেন",
       moistureCheck:"আর্দ্রতা কর্তন আছে?",
+      manageStaff:"👥 স্টাফ ম্যানেজ করুন", addStaff:"+ নতুন স্টাফ যোগ করুন", staffName:"স্টাফের নাম",
+      staffList:"স্টাফ তালিকা", noStaff:"এখনও কোনো স্টাফ যোগ করা হয়নি",
+      whoAreYou:"আপনি কে?", selectYourself:"লগইন করতে আপনার নাম বাছুন",
+      setStaffCode:"আপনার গোপন পিন সেট করুন", staffCodeHint:"৪ সংখ্যার পিন বেছে নিন যা শুধু আপনি জানবেন। অ্যাডমিন এটি দেখতে পাবে না।",
+      staffCodeSet:"✅ পিন সেট হয়েছে! এখন লগইন করুন।", staffCodeAlreadySet:"পিন আগেই সেট হয়েছে। ভুলে গেলে অ্যাডমিনকে রিসেট করতে বলুন।",
+      resetStaffCode:"পিন রিসেট করুন (স্টাফ নতুন পিন সেট করবেন)",
+      staffCodeIsSet:"✓ স্টাফ পিন সেট করেছেন", staffCodeNotSet:"⚠ পিন সেট হয়নি — স্টাফ সেট করবেন",
+      loggedInAs:"লগইন করেছেন", enteredBy:"এন্ট্রি করেছেন",
+      exportCSV:"📥 সব ডেটা এক্সপোর্ট করুন (CSV / Excel)", exporting:"প্রস্তুত হচ্ছে...",
       addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
       whatToAdd:"কী যোগ করতে চান?",
       date:"তারিখ", qty:"গ্রস পরিমাণ (কুইন্টাল)", rate:"বেস দর (₹/কুইন্টাল)", amount:"নেট টাকা (₹)",
@@ -273,26 +291,120 @@
       </div>`);
   }
 
-  // ── PIN GATE ──────────────────────────────────────────────────
+  // ── PIN GATE (admin only now) ─────────────────────────────────
   function goPinGate(role){
-    const hint = role==='admin' ? t('adminPinHint') : t('staffPinHint');
+    if(role==='staff') return goStaffGate();
+    const hint = t('adminPinHint');
     setScreen(`
       <span class="back-link" onclick="A.goHome()">${t('back')}</span>
       <div class="card" style="text-align:center;">
-        <div style="font-size:36px;margin-bottom:8px;">${role==='admin'?'🔑':'✍️'}</div>
+        <div style="font-size:36px;margin-bottom:8px;">🔑</div>
         <div style="font-weight:700;font-size:16px;margin-bottom:4px;">${t('enterPin')}</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${hint}</div>
         <input type="password" id="pinInput" inputmode="numeric" maxlength="6"
           placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:6px;"/>
-        <button class="big-btn ${role==='admin'?'btn-purple':'btn-orange'}"
-          onclick="A.checkPin('${role}')">${t('unlock')}</button>
+        <button class="big-btn btn-purple" onclick="A.checkPin('admin')">${t('unlock')}</button>
       </div>`);
   }
   function checkPin(role){
     const v = document.getElementById('pinInput').value;
-    const correct = role==='admin' ? ADMIN_PIN : STAFF_PIN;
-    if(v===correct){ currentMode=role; role==='admin'?goAdminHome():goStaffHome(); }
+    if(v===ADMIN_PIN){ currentMode='admin'; goAdminHome(); }
     else showToast(t('wrongPin'));
+  }
+
+  // ── STAFF GATE — select identity then PIN ─────────────────────
+  function goStaffGate(){
+    currentMode='staff';
+    if(DATA.staff.length===0){
+      setScreen(`
+        <span class="back-link" onclick="A.goHome()">${t('back')}</span>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:40px;margin-bottom:10px;">👥</div>
+          <div style="font-weight:700;margin-bottom:8px;">${t('noStaff')}</div>
+          <div style="font-size:13px;color:var(--muted);">Ask admin to add staff members first.</div>
+        </div>`);
+      return;
+    }
+    let staffCards = DATA.staff.map(s=>`
+      <div class="supplier-item" onclick="A.goStaffLogin('${s.id}')">
+        <div>
+          <div class="sname">${escapeHtml(s.name)}</div>
+          <div class="sphone">${escapeHtml(s.phone||'')}</div>
+        </div>
+        <div style="font-size:22px;">${s.code?'🔐':'⚠️'}</div>
+      </div>`).join('');
+    setScreen(`
+      <span class="back-link" onclick="A.goHome()">${t('back')}</span>
+      <div class="card" style="background:#fff7ed;border:1px solid #fde6c8;text-align:center;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px;">✍️ ${t('whoAreYou')}</div>
+        <div style="font-size:13px;color:#92400e;">${t('selectYourself')}</div>
+      </div>
+      ${staffCards}`);
+  }
+
+  function goStaffLogin(staffId){
+    const s = DATA.staff.find(x=>x.id===staffId);
+    if(!s) return goStaffGate();
+    if(!s.code){
+      // No PIN set yet — go to self-setup
+      goSetStaffCode(staffId);
+      return;
+    }
+    setScreen(`
+      <span class="back-link" onclick="A.goStaffGate()">${t('back')}</span>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;margin-bottom:8px;">✍️</div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:4px;">${escapeHtml(s.name)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('enterPin')}</div>
+        <input type="password" id="staffPinInput" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="text-align:center;font-size:24px;letter-spacing:6px;"/>
+        <button class="big-btn btn-orange" onclick="A.checkStaffPin('${staffId}')">${t('unlock')}</button>
+      </div>`);
+  }
+
+  function checkStaffPin(staffId){
+    const s = DATA.staff.find(x=>x.id===staffId);
+    const v = document.getElementById('staffPinInput').value;
+    if(s && v===s.code){
+      currentStaffId = staffId;
+      currentMode='staff';
+      goStaffHome();
+    } else { showToast(t('wrongPin')); }
+  }
+
+  // ── STAFF SELF-PIN SETUP ──────────────────────────────────────
+  function goSetStaffCode(staffId){
+    const s = DATA.staff.find(x=>x.id===staffId);
+    setScreen(`
+      <span class="back-link" onclick="A.goStaffGate()">${t('back')}</span>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;margin-bottom:8px;">🔐</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">${escapeHtml(s?.name||'')} — ${t('setStaffCode')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${t('staffCodeHint')}</div>
+        <label style="text-align:left;">${t('newCode')}</label>
+        <input type="password" id="sc1" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="letter-spacing:4px;font-size:20px;text-align:center;"/>
+        <label style="text-align:left;">${t('confirmCode')}</label>
+        <input type="password" id="sc2" inputmode="numeric" maxlength="4"
+          placeholder="••••" style="letter-spacing:4px;font-size:20px;text-align:center;"/>
+        <button class="big-btn btn-orange" onclick="A.saveStaffCode('${staffId}')">${t('save')}</button>
+      </div>`);
+  }
+  async function saveStaffCode(staffId){
+    const code1 = document.getElementById('sc1').value.trim();
+    const code2 = document.getElementById('sc2').value.trim();
+    if(code1.length<4){ showToast(LANG==='bn'?'৪ সংখ্যার পিন দিন':'Enter a 4-digit PIN'); return; }
+    if(code1!==code2){ showToast(t('codeMismatch')); return; }
+    const s = DATA.staff.find(x=>x.id===staffId);
+    if(!s) return;
+    if(s.code){ showToast(t('staffCodeAlreadySet')); return; }
+    s.code = code1;
+    s.codeSetBySelf = true;
+    await saveData();
+    currentStaffId = staffId;
+    currentMode = 'staff';
+    showToast(t('staffCodeSet'));
+    goStaffHome();
   }
 
   // ── SUPPLIER GATE (phone + secret code) ───────────────────────
@@ -391,9 +503,14 @@
         running+=(tx.type==='supply'?tx.amount:-tx.amount);
         const edited = tx.editLog && tx.editLog.length>0;
         let auditHtml='';
-        if(edited && currentMode==='admin'){
-          const last=tx.editLog[tx.editLog.length-1];
-          auditHtml=`<div class="audit-trail">${t('editedBy')} ${last.on}<br>${t('originalVal')}: ${fmtMoney(last.origAmount)}</div>`;
+        if(currentMode==='admin'){
+          const enteredBy=tx.enteredByName||(tx.addedBy==='admin'?'Admin':'Staff')||'';
+          const enteredAt=tx.enteredAt||'';
+          if(enteredBy) auditHtml+=`<div class="audit-trail">📝 ${t('enteredBy')}: <b>${escapeHtml(enteredBy)}</b>${enteredAt?' · '+enteredAt:''}</div>`;
+          if(tx.editLog&&tx.editLog.length>0){
+            const last=tx.editLog[tx.editLog.length-1];
+            auditHtml+=`<div class="audit-trail">${t('editedBy')} ${last.on} | ${t('originalVal')}: ${fmtMoney(last.origAmount)}</div>`;
+          }
         }
         // vehicle + variety + cut detail for supply rows
         let supplyDetail='';
@@ -797,8 +914,13 @@
       await saveData();
       showToast(t('editSaved'));
     } else {
+      const staffMember = DATA.staff.find(x=>x.id===currentStaffId)||{};
       const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, note,
-        ts:Date.now(), addedBy:currentMode, editLog:[], ...txData };
+        ts:Date.now(), addedBy:currentMode,
+        enteredById: currentStaffId||'admin',
+        enteredByName: currentMode==='admin'?'Admin':(staffMember.name||'Staff'),
+        enteredAt: new Date().toLocaleString('en-IN'),
+        editLog:[], ...txData };
       DATA.transactions.push(tx);
       await saveData();
       showToast(t('entryAdded'));
@@ -828,6 +950,15 @@
   async function goStaffHome(){
     currentMode='staff';
     await loadData();
+    const staffMember = DATA.staff.find(x=>x.id===currentStaffId);
+    const identityBadge = staffMember
+      ? `<div class="card" style="background:#fff7ed;border:1px solid #fde6c8;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:28px;">✍️</div>
+          <div>
+            <div style="font-weight:700;font-size:15px;">${escapeHtml(staffMember.name)}</div>
+            <div style="font-size:12px;color:#92400e;">${t('loggedInAs')} — ${t('staffWelcome')}</div>
+          </div>
+        </div>` : '';
     let list='';
     if(DATA.suppliers.length===0){
       list=`<div class="empty">${t('noSuppliers')}</div>`;
@@ -842,9 +973,7 @@
     }
     setScreen(`
       <span class="back-link" onclick="A.goHome()">${t('back')}</span>
-      <div class="card" style="background:#fff7ed;border:1px solid #fde6c8;">
-        <div style="font-size:13px;color:#92400e;">✍️ ${t('staffWelcome')}</div>
-      </div>
+      ${identityBadge}
       <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
       ${list}`);
   }
@@ -870,7 +999,11 @@
       <div class="card" style="background:#f5f3ff;border:1px solid #ddd6fe;">
         <div style="font-size:13px;color:var(--admin);">🔑 ${t('adminWelcome')}</div>
       </div>
-      <button class="big-btn btn-purple" onclick="A.showAddSupplier()">${t('addSupplier')}</button>
+      <div class="row">
+        <div><button class="big-btn btn-purple" style="font-size:15px;" onclick="A.showAddSupplier()">${t('addSupplier')}</button></div>
+        <div><button class="big-btn" style="background:#0f766e;font-size:15px;" onclick="A.goManageStaff()">${t('manageStaff')}</button></div>
+      </div>
+      <button class="big-btn btn-grey" style="font-size:15px;" onclick="A.exportCSV()">${t('exportCSV')}</button>
       <div style="font-weight:700;color:var(--muted);font-size:13px;margin-bottom:8px;">${t('allSuppliers')||'All Suppliers'}</div>
       ${list}`);
   }
@@ -945,6 +1078,94 @@
   }
 
   // ── MISC ──────────────────────────────────────────────────────
+  // ── STAFF MANAGEMENT (admin only) ────────────────────────────
+  function goManageStaff(){
+    let staffCards = DATA.staff.length===0
+      ? `<div class="empty">${t('noStaff')}</div>`
+      : DATA.staff.map(s=>`
+        <div class="supplier-item">
+          <div>
+            <div class="sname">${escapeHtml(s.name)}</div>
+            <div class="sphone">${escapeHtml(s.phone||'')} &nbsp;·&nbsp;
+              <span style="color:${s.code?'var(--ok)':'var(--danger)'};">
+                ${s.code?t('staffCodeIsSet'):t('staffCodeNotSet')}
+              </span>
+            </div>
+          </div>
+          ${s.code?`<button class="btn-sm btn-red" onclick="A.resetStaffCode('${s.id}')">${t('resetStaffCode').split('(')[0].trim()}</button>`:''}
+        </div>`).join('');
+    setScreen(`
+      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
+      <div style="font-weight:700;font-size:17px;margin-bottom:12px;">👥 ${t('staffList')}</div>
+      <button class="big-btn" style="background:#0f766e;" onclick="A.showAddStaff()">${t('addStaff')}</button>
+      ${staffCards}`);
+  }
+
+  function showAddStaff(){
+    setScreen(`
+      <span class="back-link" onclick="A.goManageStaff()">${t('back')}</span>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:12px;">👥 ${t('addStaff')}</div>
+        <label>${t('staffName')}</label>
+        <input type="text" id="stName" placeholder="${t('staffName')}"/>
+        <label>${t('supplierPhone')}</label>
+        <input type="tel" id="stPhone" placeholder="98XXXXXXXX" inputmode="numeric"/>
+        <div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;padding:12px;font-size:13px;color:#374151;">
+          ℹ️ No PIN is set here. The staff member will set their own secret PIN on first login — you will never see it.
+        </div>
+        <button class="big-btn" style="background:#0f766e;" onclick="A.saveStaff()">${t('save')}</button>
+      </div>`);
+  }
+  async function saveStaff(){
+    const name = document.getElementById('stName').value.trim();
+    const phone = document.getElementById('stPhone').value.trim();
+    if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
+    const id = 'st_'+Date.now();
+    if(!DATA.staff) DATA.staff=[];
+    DATA.staff.push({id,name,phone,code:'',codeSetBySelf:false});
+    await saveData();
+    showToast(LANG==='bn'?'স্টাফ যোগ হয়েছে':'Staff member added');
+    goManageStaff();
+  }
+  async function resetStaffCode(staffId){
+    if(!confirm(LANG==='bn'?'এই স্টাফের পিন রিসেট করবেন?':'Reset this staff member\'s PIN?')) return;
+    const s = DATA.staff.find(x=>x.id===staffId);
+    if(s){ s.code=''; s.codeSetBySelf=false; await saveData(); }
+    showToast(LANG==='bn'?'পিন রিসেট হয়েছে':'PIN reset — staff can set a new one');
+    goManageStaff();
+  }
+
+  // ── CSV EXPORT ────────────────────────────────────────────────
+  function exportCSV(){
+    showToast(t('exporting'));
+    const rows=[['Date','Supplier','Type','Vehicle No','Varieties','Gross Qty (Q)','Moisture Cut %','Net Qty (Q)','Rate ₹/Q','Quality Cut ₹/Q','Amount ₹','Payment Mode','Note','Entered By','Entry Time']];
+    DATA.transactions.filter(tx=>!tx.deleted).forEach(tx=>{
+      const s=DATA.suppliers.find(x=>x.id===tx.supplierId)||{};
+      const st=DATA.staff.find(x=>x.id===tx.enteredById)||{};
+      const enteredBy=tx.enteredByName||(st.name?st.name:tx.addedBy)||'';
+      if(tx.type==='supply'){
+        const varieties=(tx.varieties&&tx.varieties.length>0)
+          ?tx.varieties.map(v=>`${v.variety}:${v.grossQty}Q@₹${v.rate}(-₹${v.qualityCut})`).join(' | ')
+          :(tx.variety||'');
+        rows.push([tx.date,s.name||'',tx.type,tx.vehicleNo||'',varieties,
+          tx.grossQty||tx.qty||0,tx.moistureCut||0,tx.netQty||tx.grossQty||0,
+          tx.rate||0,tx.qualityCut||0,tx.amount||0,'',tx.note||'',enteredBy,
+          tx.enteredAt||new Date(tx.ts).toLocaleString('en-IN')]);
+      } else {
+        rows.push([tx.date,s.name||'',tx.type,'','',0,0,0,0,0,tx.amount||0,
+          tx.paymentMode||'',tx.note||'',enteredBy,
+          tx.enteredAt||new Date(tx.ts).toLocaleString('en-IN')]);
+      }
+    });
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url;
+    a.download=`SSRM_Paddy_Register_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function goHome(){ renderHome(); }
   function toggleLang(){ LANG=LANG==='bn'?'en':'bn'; render(); }
 
@@ -953,7 +1174,9 @@
     goHome, toggleLang,
     goSupplierGate, supplierLogin, goSetMyCode, saveMyCode,
     goPinGate, checkPin,
+    goStaffGate, goStaffLogin, checkStaffPin, goSetStaffCode, saveStaffCode,
     goStaffHome, goAdminHome,
+    goManageStaff, showAddStaff, saveStaff, resetStaffCode, exportCSV,
     viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, toggleMoisture,
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
