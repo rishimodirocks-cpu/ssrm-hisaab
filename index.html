@@ -540,6 +540,15 @@
             if(variety) supplyDetail+=`<div style="font-size:11px;color:#374151;">🌾 ${escapeHtml(variety)}</div>`;
             if(qCut>0) supplyDetail+=`<div style="font-size:11px;color:var(--danger);">✂️ Quality: −${fmtMoney(qCut)}/Q</div>`;
           }
+          // Entry time — visible to all modes on every supply row
+          const entryTime=tx.enteredAt||(tx.ts?new Date(tx.ts).toLocaleString('en-IN'):'');
+          const enteredByName=tx.enteredByName||(tx.addedBy==='admin'?'Admin':tx.addedBy||'');
+          if(entryTime){
+            supplyDetail+=`<div style="font-size:11px;color:#6b7280;margin-top:5px;padding-top:5px;border-top:1px dashed #e5e7eb;">
+              📋 ${LANG==='bn'?'এন্ট্রি':'Entry'}: <b>${entryTime}</b>
+              ${enteredByName&&currentMode!=='supplier'?`· ${LANG==='bn'?'দ্বারা':'by'} <b>${escapeHtml(enteredByName)}</b>`:''}
+            </div>`;
+          }
         }
         // payment mode badge
         let paymentDetail='';
