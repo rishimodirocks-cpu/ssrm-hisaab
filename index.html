@@ -220,8 +220,8 @@
     try{
       const res = await fetch(FIREBASE_URL+DB_PATH);
       const json = await res.json();
-      if(json && (json.suppliers||json.transactions)){
-        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[] };
+      if(json && typeof json === 'object'){
+        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[], staff:json.staff||[] };
       }
     }catch(e){ console.log('Fresh start',e); }
   }
@@ -313,8 +313,11 @@
   }
 
   // ── STAFF GATE — select identity then PIN ─────────────────────
-  function goStaffGate(){
+  async function goStaffGate(){
     currentMode='staff';
+    showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
+    await loadData();
+    if(!DATA.staff) DATA.staff=[];
     if(DATA.staff.length===0){
       setScreen(`
         <span class="back-link" onclick="A.goHome()">${t('back')}</span>
@@ -1079,7 +1082,10 @@
 
   // ── MISC ──────────────────────────────────────────────────────
   // ── STAFF MANAGEMENT (admin only) ────────────────────────────
-  function goManageStaff(){
+  async function goManageStaff(){
+    showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
+    await loadData();
+    if(!DATA.staff) DATA.staff=[];
     let staffCards = DATA.staff.length===0
       ? `<div class="empty">${t('noStaff')}</div>`
       : DATA.staff.map(s=>`
