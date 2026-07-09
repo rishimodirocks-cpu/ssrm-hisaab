@@ -120,7 +120,7 @@
       staffCodeIsSet:"✓ PIN set by staff", staffCodeNotSet:"⚠ PIN not set — staff must set it",
       loggedInAs:"Logged in as", enteredBy:"Entered by",
       exportCSV:"📥 Export All Data (CSV / Excel)", exporting:"Preparing export...",
-      disclaimer:"⚠️ Any objection to this hisaab must be raised within 48 hours of paddy unload date. After 48 hours, the entries will be deemed accepted.",
+      disclaimer:"⚠️ Any objection to this hisaab must be raised within 48 hours of the entry date shown above. After 48 hours, the entries will be deemed accepted.",
       addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
       whatToAdd:"What to add?",
       date:"Date", qty:"Gross Qty (Quintal)", rate:"Base Rate (₹/Quintal)", amount:"Net Amount (₹)",
@@ -183,7 +183,7 @@
       staffCodeIsSet:"✓ স্টাফ পিন সেট করেছেন", staffCodeNotSet:"⚠ পিন সেট হয়নি — স্টাফ সেট করবেন",
       loggedInAs:"লগইন করেছেন", enteredBy:"এন্ট্রি করেছেন",
       exportCSV:"📥 সব ডেটা এক্সপোর্ট করুন (CSV / Excel)", exporting:"প্রস্তুত হচ্ছে...",
-      disclaimer:"⚠️ এই হিসাবে কোনো আপত্তি থাকলে ধান আনলোডের তারিখ থেকে ৪৮ ঘণ্টার মধ্যে জানাতে হবে। ৪৮ ঘণ্টা পরে কোনো আপত্তি গ্রহণ করা হবে না এবং হিসাব গৃহীত বলে বিবেচিত হবে।",
+      disclaimer:"⚠️ এই হিসাবে কোনো আপত্তি থাকলে উপরে উল্লিখিত এন্ট্রির তারিখ থেকে ৪৮ ঘণ্টার মধ্যে জানাতে হবে। ৪৮ ঘণ্টা পরে কোনো আপত্তি গ্রহণ করা হবে না এবং হিসাব গৃহীত বলে বিবেচিত হবে।",
       addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
       whatToAdd:"কী যোগ করতে চান?",
       date:"তারিখ", qty:"গ্রস পরিমাণ (কুইন্টাল)", rate:"বেস দর (₹/কুইন্টাল)", amount:"নেট টাকা (₹)",
@@ -612,10 +612,16 @@
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>
-      ${currentMode==='supplier'?`<div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#713f12;line-height:1.6;">
-        ${t('disclaimer')}
-      </div>`:''}`);
+      ${currentMode==='supplier'?`
+        <div style="display:flex;gap:10px;margin-bottom:14px;">
+          <button class="big-btn btn-grey" style="margin-bottom:0;flex:1;" onclick="A.printStatement('${id}')">📤 ${LANG==='bn'?'শেয়ার করুন':'Share'}</button>
+          <button class="big-btn btn-blue" style="margin-bottom:0;flex:1;" onclick="A.downloadLedger('${id}')">📥 ${LANG==='bn'?'ডাউনলোড':'Download'}</button>
+        </div>
+        <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#713f12;line-height:1.6;">
+          ${t('disclaimer')}
+        </div>
+      `:`<button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>`}
+      `);
   }
 
   // ── ADD ENTRY (staff + admin) ─────────────────────────────────
@@ -1064,11 +1070,52 @@
   }
 
   // ── PRINT / SHARE ─────────────────────────────────────────────
-  function printStatement(id){
+  function downloadLedger(id){
     const s=DATA.suppliers.find(x=>x.id===id);
     const bal=supplierBalance(id);
     const txs=supplierTx(id);
-    let body=`${s.name} (${s.phone||''})\n`;
+    const mill='SSRM — Lion Rice Mill, Nalhati';
+    let rows=[['SSRM Hisaab Khata — '+s.name],
+      ['Phone: '+(s.phone||''), 'Generated: '+new Date().toLocaleString('en-IN')],
+      [''],
+      ['Total Supplied','Total Paid','Balance Due'],
+      [fmtMoney(bal.supplied), fmtMoney(bal.paid), fmtMoney(Math.abs(bal.due))+(bal.due>0?' (Due)':bal.due<0?' (Advance)':' (Clear)')],
+      [''],
+      ['Date','Type','Vehicle','Variety','Gross Qty','Net Qty','Rate','Amount','Balance','Entry Time']
+    ];
+    let running=0;
+    txs.forEach(tx=>{
+      running+=(tx.type==='supply'?tx.amount:-tx.amount);
+      const varieties=tx.varieties?tx.varieties.map(v=>v.variety+':'+v.grossQty+'Q').join(' | '):(tx.variety||'');
+      const entryTime=tx.enteredAt||(tx.ts?new Date(tx.ts).toLocaleString('en-IN'):'');
+      rows.push([
+        tx.date,
+        tx.type==='supply'?'Supply':'Payment',
+        tx.vehicleNo||'',
+        varieties,
+        tx.type==='supply'?(tx.grossQty||tx.qty||0)+'Q':'',
+        tx.type==='supply'?(tx.netQty||tx.grossQty||0)+'Q':'',
+        tx.type==='supply'?('₹'+(tx.rate||0)):(''),
+        '₹'+Math.round(tx.amount||0).toLocaleString('en-IN'),
+        '₹'+Math.round(running).toLocaleString('en-IN'),
+        entryTime
+      ]);
+    });
+    rows.push([''],
+      ['⚠️ Disclaimer: Any objection must be raised within 48 hours of entry time shown above.'],
+      ['After 48 hours entries are deemed accepted. — '+mill]
+    );
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`Hisaab_${(s.name||'supplier').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function printStatement(id){
+    const s=DATA.suppliers.find(x=>x.id===id);
     body+=`${t('totalSupplied')}: ${fmtMoney(bal.supplied)} | ${t('totalPaid')}: ${fmtMoney(bal.paid)}\n`;
     body+=`${t('balanceDue')}: ${fmtMoney(Math.abs(bal.due))} ${bal.due===0?'(Clear)':bal.due>0?'(Due)':'(Advance)'}\n\n`;
     txs.forEach(tx=>{
@@ -1148,33 +1195,81 @@
 
   // ── CSV EXPORT ────────────────────────────────────────────────
   function exportCSV(){
+    // Show supplier selection screen
+    const supplierCheckboxes = DATA.suppliers.length===0
+      ? `<div class="empty">${t('noSuppliers')}</div>`
+      : DATA.suppliers.map(s=>{
+          const bal=supplierBalance(s.id);
+          const txCount=supplierTx(s.id).length;
+          return `<label style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer;">
+            <input type="checkbox" class="sup-chk" value="${s.id}" checked
+              style="width:20px;height:20px;margin:0;accent-color:var(--brand);cursor:pointer;flex-shrink:0;"/>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:15px;">${escapeHtml(s.name)}</div>
+              <div style="font-size:12px;color:var(--muted);">${txCount} entries · ${fmtMoney(Math.abs(bal.due))} ${bal.due>0?'due':bal.due<0?'advance':'clear'}</div>
+            </div>
+          </label>`;
+        }).join('');
+    setScreen(`
+      <span class="back-link" onclick="A.goAdminHome()">${t('back')}</span>
+      <div style="font-weight:800;font-size:17px;margin-bottom:4px;">📥 ${LANG==='bn'?'এক্সপোর্টের জন্য সাপ্লায়ার বাছুন':'Select Suppliers to Export'}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">${LANG==='bn'?'যাদের ডেটা দরকার তাদের টিক করুন, তারপর ডাউনলোড করুন।':'Tick the suppliers you need, then download.'}</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn-sm btn-green" onclick="A.toggleAllSuppliers(true)">${LANG==='bn'?'সব বাছুন':'Select All'}</button>
+        <button class="btn-sm btn-grey" onclick="A.toggleAllSuppliers(false)">${LANG==='bn'?'সব বাদ':'Deselect All'}</button>
+      </div>
+      <div id="supCheckList">${supplierCheckboxes}</div>
+      <div style="position:sticky;bottom:0;background:var(--bg);padding:12px 0 4px;">
+        <button class="big-btn btn-green" onclick="A.doExportCSV()">📥 ${LANG==='bn'?'নির্বাচিত এক্সপোর্ট করুন':'Export Selected'}</button>
+      </div>`);
+  }
+
+  function toggleAllSuppliers(check){
+    document.querySelectorAll('.sup-chk').forEach(cb=>cb.checked=check);
+  }
+
+  function doExportCSV(){
+    const selected=new Set([...document.querySelectorAll('.sup-chk:checked')].map(cb=>cb.value));
+    if(selected.size===0){showToast(LANG==='bn'?'কোনো সাপ্লায়ার বাছা হয়নি':'No suppliers selected');return;}
     showToast(t('exporting'));
-    const rows=[['Date','Supplier','Type','Vehicle No','Varieties','Gross Qty (Q)','Moisture Cut %','Net Qty (Q)','Rate ₹/Q','Quality Cut ₹/Q','Amount ₹','Payment Mode','Note','Entered By','Entry Time']];
-    DATA.transactions.filter(tx=>!tx.deleted).forEach(tx=>{
-      const s=DATA.suppliers.find(x=>x.id===tx.supplierId)||{};
-      const st=DATA.staff.find(x=>x.id===tx.enteredById)||{};
-      const enteredBy=tx.enteredByName||(st.name?st.name:tx.addedBy)||'';
-      if(tx.type==='supply'){
-        const varieties=(tx.varieties&&tx.varieties.length>0)
-          ?tx.varieties.map(v=>`${v.variety}:${v.grossQty}Q@₹${v.rate}(-₹${v.qualityCut})`).join(' | ')
-          :(tx.variety||'');
-        rows.push([tx.date,s.name||'',tx.type,tx.vehicleNo||'',varieties,
-          tx.grossQty||tx.qty||0,tx.moistureCut||0,tx.netQty||tx.grossQty||0,
-          tx.rate||0,tx.qualityCut||0,tx.amount||0,'',tx.note||'',enteredBy,
-          tx.enteredAt||new Date(tx.ts).toLocaleString('en-IN')]);
+    const allRows=[['SSRM Paddy Register — Exported: '+new Date().toLocaleString('en-IN')],['']];
+    DATA.suppliers.filter(s=>selected.has(s.id)).forEach(s=>{
+      const bal=supplierBalance(s.id);
+      const txs=supplierTx(s.id);
+      allRows.push([s.name+(s.phone?' ('+s.phone+')':'')]);
+      allRows.push(['Total Supplied: '+fmtMoney(bal.supplied),'Total Paid: '+fmtMoney(bal.paid),'Balance: '+fmtMoney(Math.abs(bal.due))+(bal.due>0?' DUE':bal.due<0?' ADVANCE':' CLEAR')]);
+      allRows.push(['Date','Type','Vehicle','Variety','Gross Qty (Q)','Moisture %','Net Qty (Q)','Rate ₹/Q','Quality Cut ₹/Q','Amount ₹','Payment Mode','Note','Entered By','Entry Time']);
+      if(txs.length===0){
+        allRows.push(['(No entries)']);
       } else {
-        rows.push([tx.date,s.name||'',tx.type,'','',0,0,0,0,0,tx.amount||0,
-          tx.paymentMode||'',tx.note||'',enteredBy,
-          tx.enteredAt||new Date(tx.ts).toLocaleString('en-IN')]);
+        txs.forEach(tx=>{
+          const enteredBy=tx.enteredByName||(tx.addedBy==='admin'?'Admin':'Staff')||'';
+          const entryTime=tx.enteredAt||(tx.ts?new Date(tx.ts).toLocaleString('en-IN'):'');
+          if(tx.type==='supply'){
+            const varieties=(tx.varieties&&tx.varieties.length>0)
+              ?tx.varieties.map(v=>v.variety+':'+v.grossQty+'Q@₹'+v.rate+(v.qualityCut>0?'(-₹'+v.qualityCut+')':'')).join(' | ')
+              :(tx.variety||'');
+            allRows.push([tx.date,'Supply',tx.vehicleNo||'',varieties,
+              tx.grossQty||tx.qty||0,tx.moistureCut||0,tx.netQty||tx.grossQty||0,
+              tx.rate||0,tx.qualityCut||0,tx.amount||0,'',tx.note||'',enteredBy,entryTime]);
+          } else {
+            allRows.push([tx.date,'Payment','','','','','','','',tx.amount||0,
+              tx.paymentMode||'',tx.note||'',enteredBy,entryTime]);
+          }
+        });
+        allRows.push(['','','','','','','','','','Balance: '+fmtMoney(bal.due>0?bal.due:0),'','','','']);
       }
+      allRows.push(['']);
     });
-    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const csv=allRows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url;
-    a.download=`SSRM_Paddy_Register_${new Date().toISOString().slice(0,10)}.csv`;
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='SSRM_Paddy_'+(selected.size===DATA.suppliers.length?'All':selected.size+'_Suppliers')+'_'+new Date().toISOString().slice(0,10)+'.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast((LANG==='bn'?'এক্সপোর্ট সম্পন্ন':'Export done')+' — '+selected.size+' '+(LANG==='bn'?'সাপ্লায়ার':'suppliers'));
   }
 
   function goHome(){ renderHome(); }
@@ -1187,12 +1282,12 @@
     goPinGate, checkPin,
     goStaffGate, goStaffLogin, checkStaffPin, goSetStaffCode, saveStaffCode,
     goStaffHome, goAdminHome,
-    goManageStaff, showAddStaff, saveStaff, resetStaffCode, exportCSV,
+    goManageStaff, showAddStaff, saveStaff, resetStaffCode, exportCSV, toggleAllSuppliers, doExportCSV,
     viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, toggleMoisture,
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
     showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
-    printStatement
+    printStatement, downloadLedger
   };
 
   loadData().then(render);
