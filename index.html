@@ -120,6 +120,7 @@
       staffCodeIsSet:"✓ PIN set by staff", staffCodeNotSet:"⚠ PIN not set — staff must set it",
       loggedInAs:"Logged in as", enteredBy:"Entered by",
       exportCSV:"📥 Export All Data (CSV / Excel)", exporting:"Preparing export...",
+      disclaimer:"⚠️ Any objection to this hisaab must be raised within 48 hours of paddy unload date. After 48 hours, the entries will be deemed accepted.",
       addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
       whatToAdd:"What to add?",
       date:"Date", qty:"Gross Qty (Quintal)", rate:"Base Rate (₹/Quintal)", amount:"Net Amount (₹)",
@@ -182,6 +183,7 @@
       staffCodeIsSet:"✓ স্টাফ পিন সেট করেছেন", staffCodeNotSet:"⚠ পিন সেট হয়নি — স্টাফ সেট করবেন",
       loggedInAs:"লগইন করেছেন", enteredBy:"এন্ট্রি করেছেন",
       exportCSV:"📥 সব ডেটা এক্সপোর্ট করুন (CSV / Excel)", exporting:"প্রস্তুত হচ্ছে...",
+      disclaimer:"⚠️ এই হিসাবে কোনো আপত্তি থাকলে ধান আনলোডের তারিখ থেকে ৪৮ ঘণ্টার মধ্যে জানাতে হবে। ৪৮ ঘণ্টা পরে কোনো আপত্তি গ্রহণ করা হবে না এবং হিসাব গৃহীত বলে বিবেচিত হবে।",
       addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
       whatToAdd:"কী যোগ করতে চান?",
       date:"তারিখ", qty:"গ্রস পরিমাণ (কুইন্টাল)", rate:"বেস দর (₹/কুইন্টাল)", amount:"নেট টাকা (₹)",
@@ -610,7 +612,10 @@
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>`);
+      <button class="big-btn btn-grey" onclick="A.printStatement('${id}')">${t('printSlip')}</button>
+      ${currentMode==='supplier'?`<div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#713f12;line-height:1.6;">
+        ${t('disclaimer')}
+      </div>`:''}`);
   }
 
   // ── ADD ENTRY (staff + admin) ─────────────────────────────────
