@@ -79,7 +79,7 @@
   // ADMIN PIN — only you. Staff set their own PINs individually.
   const ADMIN_PIN  = '2580';
 
-  let DATA = { suppliers:[], transactions:[], staff:[] };
+  let DATA = { suppliers:[], transactions:[], staff:[], loginLog:[] };
   let LANG = 'bn';
   let currentSupplierId = null;
   let currentMode = 'supplier'; // 'supplier' | 'staff' | 'admin'
@@ -120,6 +120,9 @@
       staffCodeIsSet:"✓ PIN set by staff", staffCodeNotSet:"⚠ PIN not set — staff must set it",
       loggedInAs:"Logged in as", enteredBy:"Entered by",
       exportCSV:"📥 Export All Data (CSV / Excel)", exporting:"Preparing export...",
+      openingBalance:"Opening Balance", openingBalanceHint:"Enter old dues as on date. Positive = mill owes supplier. Negative = supplier has advance from mill.", openingDate:"As on Date", openingNote:"Note (e.g. balance carried from old register)", setOpening:"Set Opening Balance", openingBalanceLabel:"Opening Balance (Old Dues)",
+      loginHistory:"Supplier Login History", lastSeen:"Last seen", neverLoggedIn:"Never logged in yet",
+      loginOn:"Logged in on", viewsAgo:"views",
       disclaimer:"⚠️ Any objection to this hisaab must be raised within 48 hours of the entry date shown above. After 48 hours, the entries will be deemed accepted.",
       addTransaction:"+ Add New Entry", supply:"Paddy Supply", payment:"Payment Made",
       whatToAdd:"What to add?",
@@ -183,6 +186,9 @@
       staffCodeIsSet:"✓ স্টাফ পিন সেট করেছেন", staffCodeNotSet:"⚠ পিন সেট হয়নি — স্টাফ সেট করবেন",
       loggedInAs:"লগইন করেছেন", enteredBy:"এন্ট্রি করেছেন",
       exportCSV:"📥 সব ডেটা এক্সপোর্ট করুন (CSV / Excel)", exporting:"প্রস্তুত হচ্ছে...",
+      openingBalance:"প্রারম্ভিক ব্যালেন্স", openingBalanceHint:"পুরনো বকেয়া লিখুন। ধনাত্মক = মিল সাপ্লায়ারকে দিতে হবে। ঋণাত্মক = সাপ্লায়ার অগ্রিম নিয়েছেন।", openingDate:"তারিখ", openingNote:"নোট (যেমন - পুরনো রেজিস্টার থেকে আনা ব্যালেন্স)", setOpening:"প্রারম্ভিক ব্যালেন্স সেট করুন", openingBalanceLabel:"প্রারম্ভিক ব্যালেন্স (পুরনো বকেয়া)",
+      loginHistory:"সাপ্লায়ারের লগইন ইতিহাস", lastSeen:"সর্বশেষ দেখেছেন", neverLoggedIn:"এখনও লগইন করেননি",
+      loginOn:"লগইন করেছেন", viewsAgo:"বার",
       disclaimer:"⚠️ এই হিসাবে কোনো আপত্তি থাকলে উপরে উল্লিখিত এন্ট্রির তারিখ থেকে ৪৮ ঘণ্টার মধ্যে জানাতে হবে। ৪৮ ঘণ্টা পরে কোনো আপত্তি গ্রহণ করা হবে না এবং হিসাব গৃহীত বলে বিবেচিত হবে।",
       addTransaction:"+ নতুন এন্ট্রি যোগ করুন", supply:"ধান সাপ্লাই", payment:"টাকা দেওয়া হয়েছে",
       whatToAdd:"কী যোগ করতে চান?",
@@ -223,7 +229,7 @@
       const res = await fetch(FIREBASE_URL+DB_PATH);
       const json = await res.json();
       if(json && typeof json === 'object'){
-        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[], staff:json.staff||[] };
+        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[], staff:json.staff||[], loginLog:json.loginLog||[] };
       }
     }catch(e){ console.log('Fresh start',e); }
   }
@@ -265,12 +271,14 @@
       .sort((a,b)=>new Date(a.date)-new Date(b.date)||(a.ts-b.ts));
   }
   function supplierBalance(id){
+    const s=DATA.suppliers.find(x=>x.id===id)||{};
+    const opening=parseFloat(s.openingBalance)||0; // positive = we owe them
     let supplied=0, paid=0;
     supplierTx(id).forEach(tx=>{
       if(tx.type==='supply') supplied+=tx.amount;
       else paid+=tx.amount;
     });
-    return {supplied, paid, due:supplied-paid};
+    return {supplied, paid, opening, due:opening+supplied-paid};
   }
 
   // ── RENDER SHELL ──────────────────────────────────────────────
@@ -444,6 +452,12 @@
     );
     if(!match){ showToast(t('wrongCode')); return; }
     currentSupplierId=match.id;
+    // Record login event
+    if(!DATA.loginLog) DATA.loginLog=[];
+    DATA.loginLog.push({ supplierId:match.id, at:new Date().toLocaleString('en-IN'), ts:Date.now() });
+    // Keep only last 100 login events to avoid Firebase bloat
+    if(DATA.loginLog.length>100) DATA.loginLog=DATA.loginLog.slice(-100);
+    saveData(); // fire and forget — don't await so login feels instant
     viewLedger(match.id);
   }
 
@@ -499,11 +513,26 @@
     if(!s) return renderHome();
     const txs=supplierTx(id);
     const bal=supplierBalance(id);
-    let running=0, rows='';
+    const s_ob=DATA.suppliers.find(x=>x.id===id)||{};
+    const opening=parseFloat(s_ob.openingBalance)||0;
+    let running=opening, rows='';
 
-    if(txs.length===0){
+    // Opening balance row
+    if(opening!==0){
+      rows+=`<tr style="background:#f0f9ff;">
+        <td><span class="tag" style="background:#dbeafe;color:#1e40af;">${t('openingBalanceLabel')}</span>
+          ${s_ob.openingDate?`<div style="font-size:11px;color:var(--muted);">${fmtD(s_ob.openingDate)}</div>`:''}
+          ${s_ob.openingNote?`<div style="font-size:11px;color:var(--muted);">${escapeHtml(s_ob.openingNote)}</div>`:''}
+        </td>
+        <td>—</td><td>—</td>
+        <td>${fmtMoney(Math.abs(opening))}<br><span style="font-size:10px;color:var(--muted);">${opening>0?(LANG==='bn'?'বাকি':'Due'):LANG==='bn'?'অগ্রিম':'Advance'}</span></td>
+        <td style="font-weight:700;">${fmtMoney(opening)}</td>
+      </tr>`;
+    }
+
+    if(txs.length===0 && opening===0){
       rows=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">${t('noTx')}</td></tr>`;
-    } else {
+    } else if(txs.length>0) {
       txs.forEach(tx=>{
         running+=(tx.type==='supply'?tx.amount:-tx.amount);
         const edited = tx.editLog && tx.editLog.length>0;
@@ -590,6 +619,7 @@
               ? `<button class="btn-sm btn-red" onclick="A.regenCode('${id}')">${t('regenCode')}</button>`
               : `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${LANG==='bn'?'সাপ্লায়ারকে নিজে কোড সেট করতে বলুন।':'Ask supplier to set their own code via the app.'}</div>`
             }
+            <button class="btn-sm" style="background:#0f766e;margin-top:8px;" onclick="A.showOpeningBalance('${id}')">${t('setOpening')}</button>
           </div>
         </div>` : '';
     const modeBadge = currentMode==='admin'
@@ -613,6 +643,30 @@
         <div class="lbl">${bal.due===0?t('clear'):bal.due>0?t('balanceDue'):t('balanceAdv')}</div>
       </div>
       ${codeBadge}
+      ${(currentMode==='staff'||currentMode==='admin')?(()=>{
+        const logs=(DATA.loginLog||[]).filter(l=>l.supplierId===id).sort((a,b)=>b.ts-a.ts);
+        if(logs.length===0){
+          return `<div class="card" style="background:#fef2f2;border:1px solid #fecaca;">
+            <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px;">👁 ${t('loginHistory')}</div>
+            <div style="font-size:13px;color:var(--danger);">⚠️ ${t('neverLoggedIn')}</div>
+          </div>`;
+        }
+        const recentLogs=logs.slice(0,5);
+        const logRows=recentLogs.map((l,i)=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;
+            padding:6px 0;${i<recentLogs.length-1?'border-bottom:1px solid #f0fdf4;':''}">
+            <div style="font-size:12px;color:#374151;">🕐 ${l.at}</div>
+            ${i===0?`<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Latest</span>`:''}
+          </div>`).join('');
+        return `<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:13px;font-weight:700;color:var(--brand);">👁 ${t('loginHistory')}</div>
+            <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;">${logs.length} ${t('viewsAgo')}</span>
+          </div>
+          ${logRows}
+          ${logs.length>5?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">+ ${logs.length-5} more older logins</div>`:''}
+        </div>`;
+      })():''}
       ${addBtn}
       <div class="card" style="overflow-x:auto;">
         <div style="font-weight:700;margin-bottom:8px;">${t('history')}</div>
@@ -622,10 +676,6 @@
         </table>
       </div>
       ${currentMode==='supplier'?`
-        <div style="display:flex;gap:10px;margin-bottom:14px;">
-          <button class="big-btn btn-grey" style="margin-bottom:0;flex:1;" onclick="A.printStatement('${id}')">📤 ${LANG==='bn'?'শেয়ার করুন':'Share'}</button>
-          <button class="big-btn btn-blue" style="margin-bottom:0;flex:1;" onclick="A.downloadLedger('${id}')">📥 ${LANG==='bn'?'ডাউনলোড':'Download'}</button>
-        </div>
         <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#713f12;line-height:1.6;">
           ${t('disclaimer')}
         </div>
@@ -1142,7 +1192,57 @@
   }
 
   // ── MISC ──────────────────────────────────────────────────────
-  // ── STAFF MANAGEMENT (admin only) ────────────────────────────
+  // ── OPENING BALANCE (admin only) ─────────────────────────────
+  function showOpeningBalance(id){
+    const s=DATA.suppliers.find(x=>x.id===id)||{};
+    const today=new Date().toISOString().slice(0,10);
+    setScreen(`
+      <span class="back-link" onclick="A.viewLedger('${id}')">${t('back')}</span>
+      <div class="card">
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">📂 ${t('setOpening')}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">${t('openingBalanceHint')}</div>
+        <div class="card" style="background:#fefce8;border:1px solid #fde047;padding:12px;font-size:13px;margin-bottom:12px;">
+          💡 ${LANG==='bn'
+            ?'উদাহরণ: আপনি যদি এই সাপ্লায়ারের কাছে পুরনো হিসাবে ₹১৫,০০০ বকেয়া থাকেন, তাহলে 15000 লিখুন। যদি সে অগ্রিম নিয়ে থাকে তাহলে -15000 লিখুন।'
+            :'Example: if you owe this supplier ₹15,000 from old register, enter 15000. If they took an advance, enter -15000.'}
+        </div>
+        <label>${t('openingDate')}</label>
+        <input type="date" id="obDate" value="${s.openingDate||today}"/>
+        <label>${t('openingBalance')} (₹) <span style="font-size:12px;font-weight:400;color:var(--muted);">${LANG==='bn'?'(ধনাত্মক = বকেয়া, ঋণাত্মক = অগ্রিম)':'(positive = due, negative = advance)'}</span></label>
+        <input type="number" id="obAmt" value="${s.openingBalance||0}" placeholder="0"/>
+        <label>${t('openingNote')}</label>
+        <input type="text" id="obNote" value="${escapeAttr(s.openingNote||LANG==='bn'?'পুরনো রেজিস্টার থেকে আনা ব্যালেন্স':'Balance from old register')}"/>
+        ${s.openingBalance?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;margin-bottom:12px;font-size:13px;">
+          Current opening balance: <b>${fmtMoney(Math.abs(s.openingBalance))}</b> ${parseFloat(s.openingBalance)>0?(LANG==='bn'?'বাকি':'Due'):(LANG==='bn'?'অগ্রিম':'Advance')}
+        </div>`:''}
+        <button class="big-btn" style="background:#0f766e;" onclick="A.saveOpeningBalance('${id}')">${t('save')}</button>
+        ${s.openingBalance?`<button class="big-btn btn-grey" onclick="A.clearOpeningBalance('${id}')">${LANG==='bn'?'প্রারম্ভিক ব্যালেন্স মুছুন':'Clear Opening Balance'}</button>`:''}
+      </div>`);
+  }
+
+  async function saveOpeningBalance(id){
+    const s=DATA.suppliers.find(x=>x.id===id);
+    if(!s) return;
+    const amt=parseFloat(document.getElementById('obAmt').value)||0;
+    const date=document.getElementById('obDate').value;
+    const note=document.getElementById('obNote').value.trim();
+    s.openingBalance=amt;
+    s.openingDate=date;
+    s.openingNote=note;
+    await saveData();
+    showToast(LANG==='bn'?'প্রারম্ভিক ব্যালেন্স সেট হয়েছে':'Opening balance saved');
+    viewLedger(id);
+  }
+
+  async function clearOpeningBalance(id){
+    if(!confirm(LANG==='bn'?'প্রারম্ভিক ব্যালেন্স মুছবেন?':'Clear opening balance?')) return;
+    const s=DATA.suppliers.find(x=>x.id===id);
+    if(!s) return;
+    s.openingBalance=0; s.openingDate=''; s.openingNote='';
+    await saveData();
+    showToast(LANG==='bn'?'মুছে গেছে':'Cleared');
+    viewLedger(id);
+  }
   async function goManageStaff(){
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
     await loadData();
@@ -1296,6 +1396,7 @@
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
     showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
+    showOpeningBalance, saveOpeningBalance, clearOpeningBalance,
     printStatement, downloadLedger
   };
 
