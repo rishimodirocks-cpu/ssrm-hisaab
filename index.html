@@ -614,12 +614,13 @@
           <div style="font-size:16px;font-weight:800;color:${s.code?'var(--ok)':'var(--danger)'};">
             ${s.code?t('codeIsSet'):t('codeNotSet')}
           </div>
-          <div style="margin-top:10px;">
+          <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
             ${s.code
               ? `<button class="btn-sm btn-red" onclick="A.regenCode('${id}')">${t('regenCode')}</button>`
-              : `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${LANG==='bn'?'সাপ্লায়ারকে নিজে কোড সেট করতে বলুন।':'Ask supplier to set their own code via the app.'}</div>`
+              : `<div style="font-size:12px;color:var(--muted);">${LANG==='bn'?'সাপ্লায়ারকে নিজে কোড সেট করতে বলুন।':'Ask supplier to set their own code via the app.'}</div>`
             }
-            <button class="btn-sm" style="background:#0f766e;margin-top:8px;" onclick="A.showOpeningBalance('${id}')">${t('setOpening')}</button>
+            <button class="btn-sm" style="background:#0f766e;" onclick="A.showOpeningBalance('${id}')">${t('setOpening')}</button>
+            <button class="btn-sm" style="background:#7f1d1d;" onclick="A.deleteSupplier('${id}')">🗑 ${LANG==='bn'?'সাপ্লায়ার ডিলিট':'Delete Supplier'}</button>
           </div>
         </div>` : '';
     const modeBadge = currentMode==='admin'
@@ -1192,6 +1193,18 @@
   }
 
   // ── MISC ──────────────────────────────────────────────────────
+  // ── DELETE SUPPLIER (admin only) ─────────────────────────────
+  async function deleteSupplier(id){
+    const s=DATA.suppliers.find(x=>x.id===id);
+    if(!confirm(`${LANG==='bn'?'এই সাপ্লায়ার ও তার সব লেনদেন ডিলিট করবেন? এটি আর ফিরিয়ে আনা যাবে না।':'Delete this supplier and ALL their transactions? This cannot be undone.'}\n\n"${s?.name||''}"`)) return;
+    DATA.suppliers=DATA.suppliers.filter(x=>x.id!==id);
+    DATA.transactions=DATA.transactions.filter(x=>x.supplierId!==id);
+    DATA.loginLog=(DATA.loginLog||[]).filter(x=>x.supplierId!==id);
+    await saveData();
+    showToast(LANG==='bn'?'সাপ্লায়ার ডিলিট হয়েছে':'Supplier deleted');
+    goAdminHome();
+  }
+
   // ── OPENING BALANCE (admin only) ─────────────────────────────
   function showOpeningBalance(id){
     const s=DATA.suppliers.find(x=>x.id===id)||{};
@@ -1395,7 +1408,7 @@
     viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, toggleMoisture,
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
-    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
+    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen, deleteSupplier,
     showOpeningBalance, saveOpeningBalance, clearOpeningBalance,
     printStatement, downloadLedger
   };
