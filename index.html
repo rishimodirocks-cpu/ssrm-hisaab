@@ -446,11 +446,12 @@
     if(!phone||!code){ showToast(t('enterYourPhone')); return; }
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
     await loadData();
-    const match = DATA.suppliers.find(s=>
-      (s.phone||'').replace(/\D/g,'').endsWith(phone) || phone.endsWith((s.phone||'').replace(/\D/g,''))
-      ? s.code===code : false
-    );
-    if(!match){ showToast(t('wrongCode')); return; }
+    const match = DATA.suppliers.find(s=>{
+      const stored=(s.phone||'').replace(/\D/g,'');
+      if(!stored || !phone) return false; // no phone on either side = no match
+      return stored.endsWith(phone)||phone.endsWith(stored);
+    });
+    if(!match||match.code!==code){ showToast(t('wrongCode')); return; }
     currentSupplierId=match.id;
     // Record login event
     if(!DATA.loginLog) DATA.loginLog=[];
@@ -489,9 +490,11 @@
     if(code1.length<4){ showToast(LANG==='bn'?'৪ সংখ্যার কোড দিন':'Enter a 4-digit code'); return; }
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
     await loadData();
-    const match = DATA.suppliers.find(s=>
-      (s.phone||'').replace(/\D/g,'').endsWith(phone)||phone.endsWith((s.phone||'').replace(/\D/g,''))
-    );
+    const match = DATA.suppliers.find(s=>{
+      const stored=(s.phone||'').replace(/\D/g,'');
+      if(!stored||!phone) return false;
+      return stored.endsWith(phone)||phone.endsWith(stored);
+    });
     if(!match){ showToast(t('phoneNotFound')); return; }
     if(match.code){ showToast(t('codeAlreadySet')); return; }
     // Save code — hashed so even Firebase viewer can't trivially read it
@@ -614,13 +617,15 @@
           <div style="font-size:16px;font-weight:800;color:${s.code?'var(--ok)':'var(--danger)'};">
             ${s.code?t('codeIsSet'):t('codeNotSet')}
           </div>
+          ${!s.phone?`<div style="font-size:12px;color:var(--danger);margin-top:6px;">⚠️ ${LANG==='bn'?'ফোন নম্বর নেই — সাপ্লায়ার কোড সেট করতে পারবেন না':'No phone number — supplier cannot set code'}</div>`:''}
           <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
             ${s.code
               ? `<button class="btn-sm btn-red" onclick="A.regenCode('${id}')">${t('regenCode')}</button>`
               : `<div style="font-size:12px;color:var(--muted);">${LANG==='bn'?'সাপ্লায়ারকে নিজে কোড সেট করতে বলুন।':'Ask supplier to set their own code via the app.'}</div>`
             }
             <button class="btn-sm" style="background:#0f766e;" onclick="A.showOpeningBalance('${id}')">${t('setOpening')}</button>
-            <button class="btn-sm" style="background:#7f1d1d;" onclick="A.deleteSupplier('${id}')">🗑 ${LANG==='bn'?'সাপ্লায়ার ডিলিট':'Delete Supplier'}</button>
+            <button class="btn-sm btn-purple" onclick="A.editSupplierPhone('${id}')">${LANG==='bn'?'📱 ফোন এডিট':'📱 Edit Phone'}</button>
+            <button class="btn-sm" style="background:#7f1d1d;" onclick="A.deleteSupplier('${id}')">🗑 ${LANG==='bn'?'ডিলিট':'Delete'}</button>
           </div>
         </div>` : '';
     const modeBadge = currentMode==='admin'
@@ -645,28 +650,30 @@
       </div>
       ${codeBadge}
       ${(currentMode==='staff'||currentMode==='admin')?(()=>{
-        const logs=(DATA.loginLog||[]).filter(l=>l.supplierId===id).sort((a,b)=>b.ts-a.ts);
-        if(logs.length===0){
-          return `<div class="card" style="background:#fef2f2;border:1px solid #fecaca;">
-            <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px;">👁 ${t('loginHistory')}</div>
-            <div style="font-size:13px;color:var(--danger);">⚠️ ${t('neverLoggedIn')}</div>
+        try{
+          const logs=(DATA.loginLog||[]).filter(l=>l.supplierId===id).sort((a,b)=>b.ts-a.ts);
+          if(logs.length===0){
+            return `<div class="card" style="background:#fef2f2;border:1px solid #fecaca;">
+              <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px;">👁 ${t('loginHistory')}</div>
+              <div style="font-size:13px;color:var(--danger);">⚠️ ${t('neverLoggedIn')}</div>
+            </div>`;
+          }
+          const recentLogs=logs.slice(0,5);
+          const logRows=recentLogs.map((l,i)=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;
+              padding:6px 0;${i<recentLogs.length-1?'border-bottom:1px solid #f0fdf4;':''}">
+              <div style="font-size:12px;color:#374151;">🕐 ${l.at||''}</div>
+              ${i===0?`<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Latest</span>`:''}
+            </div>`).join('');
+          return `<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div style="font-size:13px;font-weight:700;color:var(--brand);">👁 ${t('loginHistory')}</div>
+              <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;">${logs.length} ${t('viewsAgo')}</span>
+            </div>
+            ${logRows}
+            ${logs.length>5?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">+ ${logs.length-5} more older logins</div>`:''}
           </div>`;
-        }
-        const recentLogs=logs.slice(0,5);
-        const logRows=recentLogs.map((l,i)=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;
-            padding:6px 0;${i<recentLogs.length-1?'border-bottom:1px solid #f0fdf4;':''}">
-            <div style="font-size:12px;color:#374151;">🕐 ${l.at}</div>
-            ${i===0?`<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Latest</span>`:''}
-          </div>`).join('');
-        return `<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:13px;font-weight:700;color:var(--brand);">👁 ${t('loginHistory')}</div>
-            <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;">${logs.length} ${t('viewsAgo')}</span>
-          </div>
-          ${logRows}
-          ${logs.length>5?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">+ ${logs.length-5} more older logins</div>`:''}
-        </div>`;
+        }catch(e){ return ''; }
       })():''}
       ${addBtn}
       <div class="card" style="overflow-x:auto;">
@@ -1193,6 +1200,31 @@
   }
 
   // ── MISC ──────────────────────────────────────────────────────
+  // ── EDIT SUPPLIER PHONE (admin only) ─────────────────────────
+  function editSupplierPhone(id){
+    const s=DATA.suppliers.find(x=>x.id===id);
+    setScreen(`
+      <span class="back-link" onclick="A.viewLedger('${id}')">${t('back')}</span>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;">📱 ${LANG==='bn'?'ফোন নম্বর আপডেট করুন':'Update Phone Number'}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+          ${LANG==='bn'?'ফোন নম্বর সঠিক থাকলে সাপ্লায়ার নিজে কোড সেট করতে পারবেন।':'With a correct phone number, the supplier can set their own code.'}
+        </div>
+        <label>${t('supplierPhone')}</label>
+        <input type="tel" id="editPhone" value="${escapeAttr(s?.phone||'')}" placeholder="98XXXXXXXX" inputmode="numeric"/>
+        <button class="big-btn btn-purple" onclick="A.saveSupplierPhone('${id}')">${t('save')}</button>
+      </div>`);
+  }
+  async function saveSupplierPhone(id){
+    const phone=document.getElementById('editPhone').value.trim();
+    const s=DATA.suppliers.find(x=>x.id===id);
+    if(!s) return;
+    s.phone=phone;
+    await saveData();
+    showToast(LANG==='bn'?'ফোন নম্বর আপডেট হয়েছে':'Phone number updated');
+    viewLedger(id);
+  }
+
   // ── DELETE SUPPLIER (admin only) ─────────────────────────────
   async function deleteSupplier(id){
     const s=DATA.suppliers.find(x=>x.id===id);
@@ -1408,7 +1440,8 @@
     viewLedger, showAddTxForm, showTxTypeForm, calcAmt, onVarietyChange, toggleMoisture,
     renderVarietyRows, refreshAllCalcs, onVarietyRowChange, onBagsInput, onRowInput, addVarietyRow, removeVarietyRow,
     saveTx, showEditForm, deleteTx,
-    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen, deleteSupplier,
+    showAddSupplier, saveSupplier, regenCode, showSupplierCodeScreen,
+    editSupplierPhone, saveSupplierPhone, deleteSupplier,
     showOpeningBalance, saveOpeningBalance, clearOpeningBalance,
     printStatement, downloadLedger
   };
