@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSRM Hisaab Khata</title>
+</head>
+<body style="margin:0;">
 <div id="app-root" style="
   --brand:#1a6e3c; --brand-dark:#0f4d28; --accent:#d97706; --bg:#f7f5f0;
   --card:#ffffff; --text:#1f2937; --muted:#6b7280; --danger:#dc2626; --ok:#16a34a;
@@ -153,6 +161,10 @@
       originalVal:"Original", editedBy:"Edited by admin on",
       deletedBy:"Deleted by admin on",
       noSupplierPhone:"Please add a phone number to this supplier before sharing the code.",
+      allSuppliers:"All Suppliers",
+      phone10:"Enter the full 10-digit phone number",
+      phoneTaken:"This phone number is already used by:",
+      entryMissing:"This entry no longer exists — please refresh",
     },
     bn:{
       appTitle:"SSRM হিসাব খাতা", appSub:"সাপ্লায়ার একাউন্ট বুক",
@@ -219,29 +231,76 @@
       originalVal:"আসল মান", editedBy:"অ্যাডমিন এডিট করেছেন",
       deletedBy:"অ্যাডমিন ডিলিট করেছেন",
       noSupplierPhone:"কোড শেয়ার করার আগে এই সাপ্লায়ারের ফোন নম্বর যোগ করুন।",
+      allSuppliers:"সব সাপ্লায়ার",
+      phone10:"১০ সংখ্যার পুরো ফোন নম্বর দিন",
+      phoneTaken:"এই ফোন নম্বর আগে থেকেই আছে:",
+      entryMissing:"এই এন্ট্রি আর পাওয়া যাচ্ছে না — পেজ রিফ্রেশ করুন",
     }
   };
   function t(k){ return T[LANG][k]||k; }
 
   // ── FIREBASE ──────────────────────────────────────────────────
-  async function loadData(){
-    try{
-      const res = await fetch(FIREBASE_URL+DB_PATH);
-      const json = await res.json();
-      if(json && typeof json === 'object'){
-        DATA = { suppliers:json.suppliers||[], transactions:json.transactions||[], staff:json.staff||[], loginLog:json.loginLog||[] };
-      }
-    }catch(e){ console.log('Fresh start',e); }
+  // Every change re-reads the latest data from the server, applies the change,
+  // and writes back only if nobody else wrote in between (ETag check).
+  // If the latest data cannot be read, NOTHING is written — so a bad network
+  // can never overwrite the whole register with an empty/old copy.
+  const DB_URL = FIREBASE_URL+DB_PATH;
+  let SAVING = false;
+  function netErrMsg(){ return LANG==='bn'?'ইন্টারনেট সমস্যা — কিছু সেভ হয়নি, আবার চেষ্টা করুন':'Network issue — nothing was saved, please try again'; }
+  function toArr(v){
+    const list = Array.isArray(v) ? v : (v && typeof v==='object' ? Object.values(v) : []);
+    return list.filter(x=>x && typeof x==='object');
   }
-  async function saveData(){
+  function normalize(json){
+    const j = (json && typeof json==='object' && !json.error) ? json : {};
+    return { suppliers:toArr(j.suppliers), transactions:toArr(j.transactions), staff:toArr(j.staff), loginLog:toArr(j.loginLog) };
+  }
+  async function fetchRemote(){
+    let res, etag=null;
     try{
-      const res = await fetch(FIREBASE_URL+DB_PATH,{
-        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(DATA)
-      });
-      if(!res.ok) throw new Error(res.status);
+      res = await fetch(DB_URL,{headers:{'X-Firebase-ETag':'true'},cache:'no-store'});
+      etag = res.headers.get('ETag');
     }catch(e){
-      showToast(LANG==='bn'?'ইন্টারনেট সমস্যা — আবার চেষ্টা করুন':'Network issue — please try again');
+      res = await fetch(DB_URL,{cache:'no-store'});
     }
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    if(json && json.error) throw new Error(json.error);
+    return { data:normalize(json), etag };
+  }
+  async function loadData(){
+    try{ const r=await fetchRemote(); DATA=r.data; return true; }
+    catch(e){ console.error('Load failed',e); showToast(LANG==='bn'?'ডেটা লোড হয়নি — ইন্টারনেট দেখুন':'Could not load data — check internet'); return false; }
+  }
+  // fn(freshData) changes freshData in place; return false from fn to cancel.
+  async function mutate(fn, opts){
+    opts=opts||{};
+    if(SAVING){ if(!opts.silent) showToast(LANG==='bn'?'সেভ হচ্ছে, একটু অপেক্ষা করুন...':'Saving, please wait...'); return false; }
+    SAVING=true;
+    try{
+      for(let attempt=0; attempt<4; attempt++){
+        const { data, etag } = await fetchRemote();
+        if(fn(data)===false){ DATA=data; return false; }
+        const headers={'Content-Type':'application/json'};
+        if(etag) headers['if-match']=etag;
+        const res = await fetch(DB_URL,{method:'PUT',headers,body:JSON.stringify(data)});
+        if(res.status===412) continue; // someone else saved just now — retry on their data
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        DATA=data;
+        return true;
+      }
+      throw new Error('Too many conflicts');
+    }catch(e){
+      console.error('Save failed',e);
+      if(!opts.silent) showToast(netErrMsg());
+      return false;
+    }finally{ SAVING=false; }
+  }
+  function last10(p){ return (p||'').toString().replace(/\D/g,'').slice(-10); }
+  function findSupplierByPhone(list, phone){
+    const p=last10(phone);
+    if(p.length<10) return null;
+    return list.find(s=>last10(s.phone)===p)||null;
   }
 
   // ── HELPERS ───────────────────────────────────────────────────
@@ -278,7 +337,7 @@
       if(tx.type==='supply') supplied+=tx.amount;
       else paid+=tx.amount;
     });
-    return {supplied, paid, opening, due:opening+supplied-paid};
+    return {supplied, paid, opening, due:Math.round(opening+supplied-paid)};
   }
 
   // ── RENDER SHELL ──────────────────────────────────────────────
@@ -326,8 +385,7 @@
   async function goStaffGate(){
     currentMode='staff';
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
-    await loadData();
-    if(!DATA.staff) DATA.staff=[];
+    if(!(await loadData())) return renderHome();
     if(DATA.staff.length===0){
       setScreen(`
         <span class="back-link" onclick="A.goHome()">${t('back')}</span>
@@ -408,12 +466,15 @@
     const code2 = document.getElementById('sc2').value.trim();
     if(code1.length<4){ showToast(LANG==='bn'?'৪ সংখ্যার পিন দিন':'Enter a 4-digit PIN'); return; }
     if(code1!==code2){ showToast(t('codeMismatch')); return; }
-    const s = DATA.staff.find(x=>x.id===staffId);
-    if(!s) return;
-    if(s.code){ showToast(t('staffCodeAlreadySet')); return; }
-    s.code = code1;
-    s.codeSetBySelf = true;
-    await saveData();
+    let already=false;
+    const ok = await mutate(d=>{
+      const s = d.staff.find(x=>x.id===staffId);
+      if(!s) return false;
+      if(s.code){ already=true; return false; }
+      s.code = code1;
+      s.codeSetBySelf = true;
+    });
+    if(!ok){ if(already) showToast(t('staffCodeAlreadySet')); return; }
     currentStaffId = staffId;
     currentMode = 'staff';
     showToast(t('staffCodeSet'));
@@ -441,25 +502,22 @@
       </div>`);
   }
   async function supplierLogin(){
-    const phone = document.getElementById('supPhone').value.trim().replace(/\D/g,'');
+    const phone = document.getElementById('supPhone').value.trim();
     const code  = document.getElementById('supCode').value.trim();
-    if(!phone||!code){ showToast(t('enterYourPhone')); return; }
+    if(last10(phone).length<10){ showToast(t('phone10')); return; }
+    if(!code){ showToast(t('enterCode')); return; }
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
-    await loadData();
-    const match = DATA.suppliers.find(s=>{
-      const stored=(s.phone||'').replace(/\D/g,'');
-      if(!stored || !phone) return false; // no phone on either side = no match
-      return stored.endsWith(phone)||phone.endsWith(stored);
-    });
-    if(!match||match.code!==code){ showToast(t('wrongCode')); return; }
+    if(!(await loadData())) return;
+    const match = findSupplierByPhone(DATA.suppliers, phone);
+    if(!match||!match.code||match.code!==code){ showToast(t('wrongCode')); return; }
     currentSupplierId=match.id;
-    // Record login event
-    if(!DATA.loginLog) DATA.loginLog=[];
-    DATA.loginLog.push({ supplierId:match.id, at:new Date().toLocaleString('en-IN'), ts:Date.now() });
-    // Keep only last 100 login events to avoid Firebase bloat
-    if(DATA.loginLog.length>100) DATA.loginLog=DATA.loginLog.slice(-100);
-    saveData(); // fire and forget — don't await so login feels instant
     viewLedger(match.id);
+    // Record login event in the background (keeps last 300)
+    const entry={ supplierId:match.id, at:new Date().toLocaleString('en-IN'), ts:Date.now() };
+    mutate(d=>{
+      d.loginLog.push(entry);
+      if(d.loginLog.length>300) d.loginLog=d.loginLog.slice(-300);
+    },{silent:true});
   }
 
   // ── SUPPLIER SELF-CODE SETUP ──────────────────────────────────
@@ -482,25 +540,23 @@
       </div>`);
   }
   async function saveMyCode(){
-    const phone = document.getElementById('scPhone').value.trim().replace(/\D/g,'');
+    const phone = document.getElementById('scPhone').value.trim();
     const code1 = document.getElementById('scCode1').value.trim();
     const code2 = document.getElementById('scCode2').value.trim();
-    if(!phone||!code1||!code2){ showToast(t('enterYourPhone')); return; }
+    if(last10(phone).length<10){ showToast(t('phone10')); return; }
+    if(!code1||!code2){ showToast(t('newCode')); return; }
     if(code1!==code2){ showToast(t('codeMismatch')); return; }
     if(code1.length<4){ showToast(LANG==='bn'?'৪ সংখ্যার কোড দিন':'Enter a 4-digit code'); return; }
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
-    await loadData();
-    const match = DATA.suppliers.find(s=>{
-      const stored=(s.phone||'').replace(/\D/g,'');
-      if(!stored||!phone) return false;
-      return stored.endsWith(phone)||phone.endsWith(stored);
+    let problem='';
+    const ok = await mutate(d=>{
+      const match = findSupplierByPhone(d.suppliers, phone);
+      if(!match){ problem='phoneNotFound'; return false; }
+      if(match.code){ problem='codeAlreadySet'; return false; }
+      match.code = code1;
+      match.codeSetBySupplier = true;
     });
-    if(!match){ showToast(t('phoneNotFound')); return; }
-    if(match.code){ showToast(t('codeAlreadySet')); return; }
-    // Save code — hashed so even Firebase viewer can't trivially read it
-    match.code = code1; // stored as-is; admin UI will show SET/NOT SET only
-    match.codeSetBySupplier = true;
-    await saveData();
+    if(!ok){ if(problem) showToast(t(problem)); return; }
     setScreen(`
       <div style="text-align:center;padding:40px 20px;">
         <div style="font-size:60px;margin-bottom:16px;">✅</div>
@@ -524,7 +580,7 @@
     if(opening!==0){
       rows+=`<tr style="background:#f0f9ff;">
         <td><span class="tag" style="background:#dbeafe;color:#1e40af;">${t('openingBalanceLabel')}</span>
-          ${s_ob.openingDate?`<div style="font-size:11px;color:var(--muted);">${fmtD(s_ob.openingDate)}</div>`:''}
+          ${s_ob.openingDate?`<div style="font-size:11px;color:var(--muted);">${fmtDate(s_ob.openingDate)}</div>`:''}
           ${s_ob.openingNote?`<div style="font-size:11px;color:var(--muted);">${escapeHtml(s_ob.openingNote)}</div>`:''}
         </td>
         <td>—</td><td>—</td>
@@ -703,57 +759,6 @@
         <button class="big-btn btn-blue" onclick="A.showTxTypeForm('${sid}','payment')">💵 ${t('payment')}</button>
       </div>`);
   }
-  function showTxTypeForm(sid, type, editId){
-    const today=new Date().toISOString().slice(0,10);
-    const existing = editId ? DATA.transactions.find(x=>x.id===editId) : null;
-    const e=existing||{};
-    const isEdit=!!editId;
-    const backFn=isEdit?`A.viewLedger('${sid}')`:`A.showAddTxForm('${sid}')`;
-    const title=isEdit?t('editEntry'):(type==='supply'?`📦 ${t('supply')}`:`💵 ${t('payment')}`);
-    const btnColor=isEdit?'btn-purple':(type==='supply'?'btn-green':'btn-blue');
-
-    const varieties=['Swarna','CM','Gatra','Ratna','Other'];
-    const varOptions=varieties.map(v=>`<option value="${v}" ${(e.variety||'Swarna')===v?'selected':''}>${v}</option>`).join('');
-
-    const supplyFields = type==='supply' ? `
-      <label>${t('vehicleNo')}</label>
-      <input type="text" id="fVehicle" value="${escapeAttr(e.vehicleNo||'')}" placeholder="WB XX XXXX" style="text-transform:uppercase;"/>
-      <label>${t('variety')}</label>
-      <select id="fVariety" onchange="A.onVarietyChange()">${varOptions}</select>
-      <div class="row">
-        <div><label>${t('qty')}</label><input type="number" id="fQty" value="${e.grossQty||e.qty||''}" placeholder="0" oninput="A.calcAmt()"/></div>
-        <div><label>${t('rate')}</label><input type="number" id="fRate" value="${e.rate||''}" placeholder="₹/Q" oninput="A.calcAmt()"/></div>
-      </div>
-      <div class="row">
-        <div><label>${t('moistureCut')}</label><input type="number" id="fMoisture" value="${e.moistureCut||0}" placeholder="0" oninput="A.calcAmt()" min="0" max="20" step="0.5"/></div>
-        <div><label>${t('qualityCut')}</label><input type="number" id="fQualityCut" value="${e.qualityCut||0}" placeholder="₹0" oninput="A.calcAmt()"/></div>
-      </div>
-      <div class="card" id="calcBreakdown" style="background:#f8fffe;border:1px solid #d1fae5;padding:12px;font-size:14px;display:none;">
-        <div style="font-weight:700;margin-bottom:6px;color:var(--brand);">📊 ${t('cutBreakdown')}</div>
-        <div id="breakdownLines"></div>
-        <div style="border-top:1px solid #d1fae5;margin-top:8px;padding-top:8px;font-weight:800;font-size:16px;color:var(--brand);" id="netAmtDisplay"></div>
-      </div>
-      <input type="hidden" id="fAmt"/>` : `
-      <label>${t('amount')}</label>
-      <input type="number" id="fAmt" value="${e.amount||''}"/>`;
-
-    setScreen(`
-      <span class="back-link" onclick="${backFn}">${t('back')}</span>
-      <div class="card">
-        <div style="font-weight:700;margin-bottom:10px;">${title}</div>
-        <label>${t('date')}</label>
-        <input type="date" id="fDate" value="${e.date||today}"/>
-        ${supplyFields}
-        <label>${t('note')}</label>
-        <input type="text" id="fNote" value="${escapeAttr(e.note||'')}"/>
-        <button class="big-btn ${btnColor}"
-          onclick="A.saveTx('${sid}','${type}','${editId||''}')">${t('save')}</button>
-      </div>`);
-
-    // trigger initial calculation if editing
-    if(type==='supply') A.calcAmt();
-  }
-
   // Default quality cuts per variety (₹/quintal) — adjust to your rates
   const VARIETY_CUTS = { 'Swarna':0, 'CM':0, 'Gatra':0, 'Ratna':0, 'Other':0 };
   const VARIETIES = ['Swarna','CM','Gatra','Ratna','Other'];
@@ -769,9 +774,22 @@
 
     if(type==='supply'){
       // initialise variety rows from existing data or default
-      varietyRows = (e.varieties && e.varieties.length>0)
-        ? e.varieties.map(v=>({...v}))
-        : [{ variety:'Swarna', bags:'', qty:'', rate:'', qualityCut:0 }];
+      // Saved rows store quantity as grossQty; the form works with qty.
+      // Old single-variety entries (no varieties list) are loaded as one row.
+      if(e.varieties && e.varieties.length>0){
+        varietyRows = e.varieties.map(v=>({
+          variety: v.variety||'Swarna',
+          bags: v.bags||'',
+          qty: v.grossQty || v.qty || '',
+          rate: v.rate||'',
+          qualityCut: v.qualityCut||0
+        }));
+      } else if(isEdit){
+        varietyRows = [{ variety: e.variety||'Swarna', bags:'', qty: e.grossQty||e.qty||'',
+          rate: e.rate||'', qualityCut: e.qualityCut||0 }];
+      } else {
+        varietyRows = [{ variety:'Swarna', bags:'', qty:'', rate:'', qualityCut:0 }];
+      }
 
       setScreen(`
         <span class="back-link" onclick="${backFn}">${t('back')}</span>
@@ -832,7 +850,8 @@
     if(!container) return;
     let html='';
     varietyRows.forEach((row,i)=>{
-      const varOpts=VARIETIES.map(v=>`<option value="${v}" ${row.variety===v?'selected':''}>${v}</option>`).join('');
+      const names=VARIETIES.includes(row.variety)?VARIETIES:[row.variety,...VARIETIES];
+      const varOpts=names.map(v=>`<option value="${escapeAttr(v)}" ${row.variety===v?'selected':''}>${escapeHtml(v)}</option>`).join('');
       const removeBtn=varietyRows.length>1
         ?`<button onclick="A.removeVarietyRow(${i})" style="background:var(--danger);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;margin-top:4px;">✕ ${t('removeVariety')}</button>`:'';
       html+=`<div style="background:#f8fffe;border:1px solid #d1fae5;border-radius:12px;padding:12px;margin-bottom:10px;">
@@ -978,7 +997,8 @@
       txData={ vehicleNo, moistureCut:moisture, varieties:validRows,
         grossQty:totalGross, netQty:totalNet, amount:totalAmount,
         // legacy fields for backward compat
-        qty:totalGross, rate:validRows[0]?.rate||0, variety:validRows.map(v=>v.variety).join('+') };
+        qty:totalGross, rate:validRows[0]?.rate||0, variety:validRows.map(v=>v.variety).join('+'),
+        qualityCut: validRows.length===1 ? validRows[0].qualityCut : 0 };
     } else {
       const amount=parseFloat(document.getElementById('fAmt').value)||0;
       const paymentMode=document.getElementById('fPayMode').value;
@@ -987,23 +1007,26 @@
     }
 
     if(editId){
-      const tx=DATA.transactions.find(x=>x.id===editId);
-      if(!tx) return;
-      if(!tx.editLog) tx.editLog=[];
-      tx.editLog.push({ on:nowStr(), origAmount:tx.amount, origQty:tx.grossQty||tx.qty, origRate:tx.rate, origDate:tx.date, origNote:tx.note });
-      Object.assign(tx, { date, note, ...txData });
-      await saveData();
+      let missing=false;
+      const ok = await mutate(d=>{
+        const tx=d.transactions.find(x=>x.id===editId);
+        if(!tx){ missing=true; return false; }
+        tx.editLog = toArr(tx.editLog);
+        tx.editLog.push({ on:nowStr(), origAmount:tx.amount, origQty:tx.grossQty||tx.qty||0, origRate:tx.rate||0, origDate:tx.date, origNote:tx.note||'' });
+        Object.assign(tx, { date, note, ...txData });
+      });
+      if(!ok){ if(missing) showToast(t('entryMissing')); return; }
       showToast(t('editSaved'));
     } else {
       const staffMember = DATA.staff.find(x=>x.id===currentStaffId)||{};
-      const tx={ id:'t_'+Date.now(), supplierId:sid, type, date, note,
+      const tx={ id:'t_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), supplierId:sid, type, date, note,
         ts:Date.now(), addedBy:currentMode,
         enteredById: currentStaffId||'admin',
         enteredByName: currentMode==='admin'?'Admin':(staffMember.name||'Staff'),
         enteredAt: new Date().toLocaleString('en-IN'),
-        editLog:[], ...txData };
-      DATA.transactions.push(tx);
-      await saveData();
+        ...txData };
+      const ok = await mutate(d=>{ d.transactions.push(tx); });
+      if(!ok) return; // form stays filled so nothing typed is lost
       showToast(t('entryAdded'));
     }
     viewLedger(sid);
@@ -1017,12 +1040,14 @@
   }
   async function deleteTx(sid, txId){
     if(!confirm(t('confirmDelete'))) return;
-    const tx=DATA.transactions.find(x=>x.id===txId);
-    if(!tx) return;
     // soft-delete: keep record but mark deleted with audit info
-    tx.deleted=true;
-    tx.deletedOn=nowStr();
-    await saveData();
+    const ok = await mutate(d=>{
+      const tx=d.transactions.find(x=>x.id===txId);
+      if(!tx) return false;
+      tx.deleted=true;
+      tx.deletedOn=nowStr();
+    });
+    if(!ok) return;
     showToast(t('deleted'));
     viewLedger(sid);
   }
@@ -1106,9 +1131,15 @@
     const phone=document.getElementById('newPhone').value.trim();
     if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
     if(!phone){ showToast(LANG==='bn'?'ফোন নম্বর দিন':'Enter phone number'); return; }
+    if(last10(phone).length<10){ showToast(t('phone10')); return; }
     const id='s_'+Date.now();
-    DATA.suppliers.push({id,name,phone,code:''}); // no code — supplier sets their own
-    await saveData();
+    let dup=null;
+    const ok = await mutate(d=>{
+      dup = findSupplierByPhone(d.suppliers, phone);
+      if(dup) return false;
+      d.suppliers.push({id,name,phone,code:''}); // no code — supplier sets their own
+    });
+    if(!ok){ if(dup) showToast(t('phoneTaken')+' '+dup.name); return; }
     showSupplierCodeScreen(id);
   }
   function showSupplierCodeScreen(id){
@@ -1129,9 +1160,12 @@
     const s=DATA.suppliers.find(x=>x.id===id);
     if(!s) return;
     if(!confirm(LANG==='bn'?'এই সাপ্লায়ারের কোড রিসেট করবেন? তাকে নতুন কোড সেট করতে হবে।':'Reset this supplier\'s code? They will need to set a new one.')) return;
-    s.code='';
-    s.codeSetBySupplier=false;
-    await saveData();
+    const ok = await mutate(d=>{
+      const x=d.suppliers.find(y=>y.id===id);
+      if(!x) return false;
+      x.code=''; x.codeSetBySupplier=false;
+    });
+    if(!ok) return;
     showToast(LANG==='bn'?'কোড রিসেট হয়েছে। সাপ্লায়ার নতুন কোড সেট করতে পারবেন।':'Code reset. Supplier can now set a new code.');
     viewLedger(id);
   }
@@ -1150,7 +1184,8 @@
       [''],
       ['Date','Type','Vehicle','Variety','Gross Qty','Net Qty','Rate','Amount','Balance','Entry Time']
     ];
-    let running=0;
+    let running=bal.opening;
+    if(bal.opening) rows.push([s.openingDate||'','Opening balance','','','','','','₹'+Math.round(bal.opening).toLocaleString('en-IN'),'₹'+Math.round(running).toLocaleString('en-IN'),'']);
     txs.forEach(tx=>{
       running+=(tx.type==='supply'?tx.amount:-tx.amount);
       const varieties=tx.varieties?tx.varieties.map(v=>v.variety+':'+v.grossQty+'Q').join(' | '):(tx.variety||'');
@@ -1183,20 +1218,32 @@
   }
   function printStatement(id){
     const s=DATA.suppliers.find(x=>x.id===id);
+    if(!s) return;
+    const bal=supplierBalance(id);
+    const txs=supplierTx(id);
+    let body=`${s.name} — ${t('appTitle')}\n📱 ${s.phone||''}\n\n`;
+    if(bal.opening) body+=`${t('openingBalanceLabel')}: ${fmtMoney(Math.abs(bal.opening))} ${bal.opening>0?'(Due)':'(Advance)'}\n`;
     body+=`${t('totalSupplied')}: ${fmtMoney(bal.supplied)} | ${t('totalPaid')}: ${fmtMoney(bal.paid)}\n`;
-    body+=`${t('balanceDue')}: ${fmtMoney(Math.abs(bal.due))} ${bal.due===0?'(Clear)':bal.due>0?'(Due)':'(Advance)'}\n\n`;
+    body+=`${bal.due===0?t('clear'):bal.due>0?t('balanceDue'):t('balanceAdv')}: ${fmtMoney(Math.abs(bal.due))}\n\n`;
     txs.forEach(tx=>{
       if(tx.type==='supply'){
-        body+=`${fmtDate(tx.date)} - ${t('supply')} - ${escapeHtml(tx.variety||'')} - 🚛${escapeHtml(tx.vehicleNo||'')} - Gross:${tx.grossQty||tx.qty||0}Q`;
+        const vars=(tx.varieties&&tx.varieties.length)
+          ? tx.varieties.map(v=>`${v.variety} ${v.grossQty}Q@₹${v.rate}${v.qualityCut>0?' (-₹'+v.qualityCut+'/Q)':''}`).join(', ')
+          : `${tx.variety||''} ${tx.grossQty||tx.qty||0}Q@₹${tx.rate||0}${tx.qualityCut>0?' (-₹'+tx.qualityCut+'/Q)':''}`;
+        body+=`${fmtDate(tx.date)} - ${t('supply')}${tx.vehicleNo?' - 🚛'+tx.vehicleNo:''} - ${vars}`;
         if(tx.moistureCut>0) body+=` | Moisture:${tx.moistureCut}%`;
-        if(tx.qualityCut>0) body+=` | Quality cut:₹${tx.qualityCut}/Q`;
-        body+=` - Net: ${fmtMoney(tx.amount)}\n`;
+        body+=` = ${fmtMoney(tx.amount)}\n`;
       } else {
-        body+=`${fmtDate(tx.date)} - ${t('payment')} - ${fmtMoney(tx.amount)}\n`;
+        body+=`${fmtDate(tx.date)} - ${t('payment')}${tx.paymentMode?' ('+t(tx.paymentMode)+')':''} - ${fmtMoney(tx.amount)}\n`;
       }
     });
     if(navigator.share){ navigator.share({title:s.name+' Hisaab',text:body}).catch(()=>{}); }
-    else{ const w=window.open('','_blank'); w.document.write('<pre style="font-size:16px;font-family:sans-serif;">'+escapeHtml(body)+'</pre>'); }
+    else{
+      const w=window.open('','_blank');
+      if(!w){ showToast(LANG==='bn'?'পপ-আপ ব্লক হয়েছে':'Pop-up blocked'); return; }
+      w.document.write('<meta charset="utf-8"><pre style="font-size:16px;font-family:sans-serif;white-space:pre-wrap;">'+escapeHtml(body)+'</pre>');
+      w.document.close();
+    }
   }
 
   // ── MISC ──────────────────────────────────────────────────────
@@ -1217,10 +1264,16 @@
   }
   async function saveSupplierPhone(id){
     const phone=document.getElementById('editPhone').value.trim();
-    const s=DATA.suppliers.find(x=>x.id===id);
-    if(!s) return;
-    s.phone=phone;
-    await saveData();
+    if(last10(phone).length<10){ showToast(t('phone10')); return; }
+    let dup=null;
+    const ok = await mutate(d=>{
+      const s=d.suppliers.find(x=>x.id===id);
+      if(!s) return false;
+      dup=d.suppliers.find(x=>x.id!==id && last10(x.phone)===last10(phone))||null;
+      if(dup) return false;
+      s.phone=phone;
+    });
+    if(!ok){ if(dup) showToast(t('phoneTaken')+' '+dup.name); return; }
     showToast(LANG==='bn'?'ফোন নম্বর আপডেট হয়েছে':'Phone number updated');
     viewLedger(id);
   }
@@ -1229,10 +1282,12 @@
   async function deleteSupplier(id){
     const s=DATA.suppliers.find(x=>x.id===id);
     if(!confirm(`${LANG==='bn'?'এই সাপ্লায়ার ও তার সব লেনদেন ডিলিট করবেন? এটি আর ফিরিয়ে আনা যাবে না।':'Delete this supplier and ALL their transactions? This cannot be undone.'}\n\n"${s?.name||''}"`)) return;
-    DATA.suppliers=DATA.suppliers.filter(x=>x.id!==id);
-    DATA.transactions=DATA.transactions.filter(x=>x.supplierId!==id);
-    DATA.loginLog=(DATA.loginLog||[]).filter(x=>x.supplierId!==id);
-    await saveData();
+    const ok = await mutate(d=>{
+      d.suppliers=d.suppliers.filter(x=>x.id!==id);
+      d.transactions=d.transactions.filter(x=>x.supplierId!==id);
+      d.loginLog=d.loginLog.filter(x=>x.supplierId!==id);
+    });
+    if(!ok) return;
     showToast(LANG==='bn'?'সাপ্লায়ার ডিলিট হয়েছে':'Supplier deleted');
     goAdminHome();
   }
@@ -1256,7 +1311,7 @@
         <label>${t('openingBalance')} (₹) <span style="font-size:12px;font-weight:400;color:var(--muted);">${LANG==='bn'?'(ধনাত্মক = বকেয়া, ঋণাত্মক = অগ্রিম)':'(positive = due, negative = advance)'}</span></label>
         <input type="number" id="obAmt" value="${s.openingBalance||0}" placeholder="0"/>
         <label>${t('openingNote')}</label>
-        <input type="text" id="obNote" value="${escapeAttr(s.openingNote||LANG==='bn'?'পুরনো রেজিস্টার থেকে আনা ব্যালেন্স':'Balance from old register')}"/>
+        <input type="text" id="obNote" value="${escapeAttr(s.openingNote||(LANG==='bn'?'পুরনো রেজিস্টার থেকে আনা ব্যালেন্স':'Balance from old register'))}"/>
         ${s.openingBalance?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;margin-bottom:12px;font-size:13px;">
           Current opening balance: <b>${fmtMoney(Math.abs(s.openingBalance))}</b> ${parseFloat(s.openingBalance)>0?(LANG==='bn'?'বাকি':'Due'):(LANG==='bn'?'অগ্রিম':'Advance')}
         </div>`:''}
@@ -1266,32 +1321,33 @@
   }
 
   async function saveOpeningBalance(id){
-    const s=DATA.suppliers.find(x=>x.id===id);
-    if(!s) return;
     const amt=parseFloat(document.getElementById('obAmt').value)||0;
     const date=document.getElementById('obDate').value;
     const note=document.getElementById('obNote').value.trim();
-    s.openingBalance=amt;
-    s.openingDate=date;
-    s.openingNote=note;
-    await saveData();
+    const ok = await mutate(d=>{
+      const s=d.suppliers.find(x=>x.id===id);
+      if(!s) return false;
+      s.openingBalance=amt; s.openingDate=date; s.openingNote=note;
+    });
+    if(!ok) return;
     showToast(LANG==='bn'?'প্রারম্ভিক ব্যালেন্স সেট হয়েছে':'Opening balance saved');
     viewLedger(id);
   }
 
   async function clearOpeningBalance(id){
     if(!confirm(LANG==='bn'?'প্রারম্ভিক ব্যালেন্স মুছবেন?':'Clear opening balance?')) return;
-    const s=DATA.suppliers.find(x=>x.id===id);
-    if(!s) return;
-    s.openingBalance=0; s.openingDate=''; s.openingNote='';
-    await saveData();
+    const ok = await mutate(d=>{
+      const s=d.suppliers.find(x=>x.id===id);
+      if(!s) return false;
+      s.openingBalance=0; s.openingDate=''; s.openingNote='';
+    });
+    if(!ok) return;
     showToast(LANG==='bn'?'মুছে গেছে':'Cleared');
     viewLedger(id);
   }
   async function goManageStaff(){
     showToast(LANG==='bn'?'লোড হচ্ছে...':'Loading...');
-    await loadData();
-    if(!DATA.staff) DATA.staff=[];
+    if(!(await loadData())) return goAdminHome();
     let staffCards = DATA.staff.length===0
       ? `<div class="empty">${t('noStaff')}</div>`
       : DATA.staff.map(s=>`
@@ -1333,16 +1389,19 @@
     const phone = document.getElementById('stPhone').value.trim();
     if(!name){ showToast(LANG==='bn'?'নাম দিন':'Enter name'); return; }
     const id = 'st_'+Date.now();
-    if(!DATA.staff) DATA.staff=[];
-    DATA.staff.push({id,name,phone,code:'',codeSetBySelf:false});
-    await saveData();
+    const ok = await mutate(d=>{ d.staff.push({id,name,phone,code:'',codeSetBySelf:false}); });
+    if(!ok) return;
     showToast(LANG==='bn'?'স্টাফ যোগ হয়েছে':'Staff member added');
     goManageStaff();
   }
   async function resetStaffCode(staffId){
     if(!confirm(LANG==='bn'?'এই স্টাফের পিন রিসেট করবেন?':'Reset this staff member\'s PIN?')) return;
-    const s = DATA.staff.find(x=>x.id===staffId);
-    if(s){ s.code=''; s.codeSetBySelf=false; await saveData(); }
+    const ok = await mutate(d=>{
+      const s = d.staff.find(x=>x.id===staffId);
+      if(!s) return false;
+      s.code=''; s.codeSetBySelf=false;
+    });
+    if(!ok) return;
     showToast(LANG==='bn'?'পিন রিসেট হয়েছে':'PIN reset — staff can set a new one');
     goManageStaff();
   }
@@ -1393,7 +1452,8 @@
       allRows.push([s.name+(s.phone?' ('+s.phone+')':'')]);
       allRows.push(['Total Supplied: '+fmtMoney(bal.supplied),'Total Paid: '+fmtMoney(bal.paid),'Balance: '+fmtMoney(Math.abs(bal.due))+(bal.due>0?' DUE':bal.due<0?' ADVANCE':' CLEAR')]);
       allRows.push(['Date','Type','Vehicle','Variety','Gross Qty (Q)','Moisture %','Net Qty (Q)','Rate ₹/Q','Quality Cut ₹/Q','Amount ₹','Payment Mode','Note','Entered By','Entry Time']);
-      if(txs.length===0){
+      if(bal.opening) allRows.push([s.openingDate||'','Opening balance','','','','','','','',bal.opening,'',s.openingNote||'','','']);
+      if(txs.length===0 && !bal.opening){
         allRows.push(['(No entries)']);
       } else {
         txs.forEach(tx=>{
@@ -1408,10 +1468,10 @@
               tx.rate||0,tx.qualityCut||0,tx.amount||0,'',tx.note||'',enteredBy,entryTime]);
           } else {
             allRows.push([tx.date,'Payment','','','','','','','',tx.amount||0,
-              tx.paymentMode||'',tx.note||'',enteredBy,entryTime]);
+              tx.paymentMode?t(tx.paymentMode):'',tx.note||'',enteredBy,entryTime]);
           }
         });
-        allRows.push(['','','','','','','','','','Balance: '+fmtMoney(bal.due>0?bal.due:0),'','','','']);
+        allRows.push(['','','','','','','','','','Balance: '+fmtMoney(Math.abs(bal.due))+(bal.due>0?' DUE':bal.due<0?' ADVANCE':' CLEAR'),'','','','']);
       }
       allRows.push(['']);
     });
@@ -1450,3 +1510,5 @@
 })();
 </script>
 </div>
+</body>
+</html>
